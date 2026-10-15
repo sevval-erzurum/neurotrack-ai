@@ -1,0 +1,43 @@
+{
+  "features": [
+    "qchat1recode",
+    "qchat2recode",
+    "qchat3recode",
+    "qchat4recode",
+    "qchat5recode",
+    "qchat6recode",
+    "qchat9recode",
+    "qchat15recode",
+    "qchat19recode",
+    "qchat25recode"
+  ],
+  "item_labels": {
+    "1": "Adıyla seslenildiğinde bakma",
+    "2": "Göz teması",
+    "3": "Nesneleri sıraya dizme",
+    "4": "Çocuğun konuşmasının anlaşılırlığı",
+    "5": "İstediğini işaret etme",
+    "6": "İlgisini paylaşmak için işaret etme",
+    "9": "-mış gibi oyun",
+    "15": "Üzgün birini teselli etme",
+    "19": "Jest kullanımı",
+    "25": "Amaçsızca boşluğa bakma"
+  },
+  "item_scale": "0-4 (yüksek = atipik davranış)",
+  "target": "asd (1 = otizm, 0 = kontrol)",
+  "age_range_months": [
+    18,
+    24
+  ],
+  "n_samples": 252,
+  "metrics_cv": {
+    "auc_mean": 0.9441,
+    "auc_std": 0.0358,
+    "accuracy_mean": 0.866,
+    "sensitivity_mean": 0.8685,
+    "specificity": 0.8547,
+    "baseline_total_score_auc": 0.922
+  },
+  "data_source": "https://data.mendeley.com/datasets/tmpkt2mfkg/2",
+  "label_source": "ADOS-2 + ADI-R + DSM-5 klinik değerlendirme"
+}
