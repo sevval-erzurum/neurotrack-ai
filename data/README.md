@@ -17,7 +17,7 @@
 
 **Neden bu veri kullanılıyor:** Etiket, anket skorunun türevi DEĞİL. En iyi eşik kuralı
 etiketin yalnızca %76'sını açıklıyor — yani makine öğrenmesinin öğreneceği gerçek bir örüntü var.
-Model eğitimi için `app/model/train_toddler_model.py` dosyasına bakın.
+Model eğitimi: `python -m app.ml.train_toddler`. Sonuçlar ve sınırlılıklar için `MODEL_CARD.md`.
 
 ---
 
