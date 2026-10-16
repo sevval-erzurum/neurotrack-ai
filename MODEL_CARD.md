@@ -53,6 +53,16 @@ modelde bu değer `katsayı × standartlaştırılmış yanıt` olup, özellik b
 varsayımı altında tam SHAP değerine eşittir. Katkıların toplamı ile sabit terim, modelin
 log-odds çıktısını birebir verir.
 
+### Ters yönlü maddeler
+
+İki madde, yüksek (atipik) yanıtta riski **düşürür**: *nesneleri sıraya dizme* (madde 3) ve
+*dar ilgi* (madde 22). Bu bir hata değil; bu kohortta tipik gelişen çocukların bu maddelerdeki
+ortalaması otizm grubundan yüksektir (madde 3: 1.81 / 1.64, madde 22: 1.03 / 0.64). 18–24 ayda
+tekrarlayıcı davranışlar tipik gelişimde de yaygındır ve sosyal iletişim maddeleri kadar ayırt
+edici değildir. *Sosyal referans* (madde 21) için görülen küçük negatif katsayı ise büyük olasılıkla
+diğer sosyal maddelerle olan korelasyondan kaynaklanır. Katsayılar modeli açıklar; tek tek
+maddelerin klinik anlamı olarak yorumlanmamalıdır.
+
 ## Sınırlılıklar
 
 - **Olasılıklar popülasyon riski değildir.** Örneklemde otizm oranı %54, genel
