@@ -51,6 +51,13 @@ def test_login_is_rate_limited(make_user, anon):
     assert codes[10] == 429
 
 
+def test_successful_logins_do_not_count_towards_rate_limit(make_user, anon):
+    make_user("parent", email="frequent@example.com")
+    credentials = {"email": "frequent@example.com", "password": "correct-horse-1"}
+    codes = [anon.post("/auth/login", json=credentials).status_code for _ in range(15)]
+    assert set(codes) == {200}
+
+
 def test_short_password_is_rejected(anon):
     response = anon.post(
         "/auth/register",

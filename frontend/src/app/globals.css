@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Tasarım token'ları. Grafik renkleri dataviz referans paletinden; doğrulayıcıdan geçti. */
+:root {
+  color-scheme: light;
+  --page: #f6f6f3;
+  --surface: #fcfcfb;
+  --surface-2: #f1f0ec;
+  --surface-sunken: #ebeae5;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-muted: #75736d;
+  --line: rgba(11, 11, 11, 0.09);
+  --line-strong: rgba(11, 11, 11, 0.16);
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+
+  --brand: #0e7c6b;
+  --brand-ink: #ffffff;
+  --brand-soft: #e3f2ef;
+  --primary: #161615;
+  --primary-ink: #fcfcfb;
+  --focus: #2a78d6;
+
+  --series-1: #2a78d6;
+  --pole-pos: #e34948; /* riski artıran */
+  --pole-neg: #2a78d6; /* riski azaltan */
+  --neutral-mid: #d9d8d2;
+
+  --good: #0ca30c;
+  --good-ink: #006300;
+  --good-soft: #e6f4e4;
+  --warning: #fab219;
+  --warning-ink: #7a4f00;
+  --warning-soft: #fdf3dc;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+  --critical-ink: #a32626;
+  --critical-soft: #fbe7e5;
+  --info-soft: #e7f0fb;
+  --info-ink: #1c5cab;
+
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 4px 16px -8px rgba(11, 11, 11, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #222220;
+    --surface-sunken: #141413;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-muted: #8f8d86;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.16);
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --brand: #2bb39c;
+    --brand-ink: #071a17;
+    --brand-soft: #12302b;
+    --primary: #f0efec;
+    --primary-ink: #121211;
+    --focus: #3987e5;
+    --series-1: #3987e5;
+    --pole-pos: #e66767;
+    --pole-neg: #3987e5;
+    --neutral-mid: #383835;
+    --good-ink: #0ca30c;
+    --good-soft: #142a14;
+    --warning-ink: #fab219;
+    --warning-soft: #2e250f;
+    --critical-ink: #ef7b7b;
+    --critical-soft: #331616;
+    --info-soft: #14243a;
+    --info-ink: #86b6ef;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #222220;
+  --surface-sunken: #141413;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --ink-muted: #8f8d86;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --brand: #2bb39c;
+  --brand-ink: #071a17;
+  --brand-soft: #12302b;
+  --primary: #f0efec;
+  --primary-ink: #121211;
+  --focus: #3987e5;
+  --series-1: #3987e5;
+  --pole-pos: #e66767;
+  --pole-neg: #3987e5;
+  --neutral-mid: #383835;
+  --good-ink: #0ca30c;
+  --good-soft: #142a14;
+  --warning-ink: #fab219;
+  --warning-soft: #2e250f;
+  --critical-ink: #ef7b7b;
+  --critical-soft: #331616;
+  --info-soft: #14243a;
+  --info-ink: #86b6ef;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-sunken: var(--surface-sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-focus: var(--focus);
+  --color-good: var(--good);
+  --color-good-ink: var(--good-ink);
+  --color-good-soft: var(--good-soft);
+  --color-warning: var(--warning);
+  --color-warning-ink: var(--warning-ink);
+  --color-warning-soft: var(--warning-soft);
+  --color-critical: var(--critical);
+  --color-critical-ink: var(--critical-ink);
+  --color-critical-soft: var(--critical-soft);
+  --color-info-soft: var(--info-soft);
+  --color-info-ink: var(--info-ink);
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --radius-card: var(--radius);
+  --shadow-card: var(--shadow);
+}
+
+html {
+  background: var(--page);
+}
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--brand-soft);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

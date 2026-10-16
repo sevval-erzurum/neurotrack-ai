@@ -18,7 +18,8 @@ class RateLimiter:
         self._hits: dict[str, deque[float]] = defaultdict(deque)
         self._lock = Lock()
 
-    def check(self, key: str) -> None:
+    def check(self, key: str, record: bool = True) -> None:
+        """Sınır aşıldıysa 429 fırlatır. record=False ise yalnızca kontrol eder, saymaz."""
         now = time.monotonic()
         with self._lock:
             hits = self._hits[key]
@@ -30,7 +31,16 @@ class RateLimiter:
                     "Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar deneyin.",
                     headers={"Retry-After": str(int(self.window))},
                 )
-            hits.append(now)
+            if record:
+                hits.append(now)
+
+    def hit(self, key: str) -> None:
+        with self._lock:
+            self._hits[key].append(time.monotonic())
+
+    def clear(self, key: str) -> None:
+        with self._lock:
+            self._hits.pop(key, None)
 
     def reset(self) -> None:
         with self._lock:

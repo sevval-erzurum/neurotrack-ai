@@ -44,13 +44,17 @@ def register(data: RegisterIn, response: Response, db: DB) -> User:
 def login(data: LoginIn, request: Request, response: Response, db: DB) -> User:
     email = data.email.lower()
     client = request.client.host if request.client else "unknown"
-    login_limiter.check(f"{client}:{email}")
+    key = f"{client}:{email}"
+    # Yalnızca başarısız denemeler sayılır; meşru kullanıcı sık giriş yaptı diye kilitlenmez.
+    login_limiter.check(key, record=False)
 
     user = db.scalar(select(User).where(User.email == email))
     valid = verify_password(data.password, user.password_hash if user else DUMMY_HASH)
     if user is None or not valid:
+        login_limiter.hit(key)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "E-posta veya şifre hatalı.")
 
+    login_limiter.clear(key)
     _start_session(response, user)
     return user
 
