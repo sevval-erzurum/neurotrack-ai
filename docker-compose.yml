@@ -1,0 +1,49 @@
+# Çalıştırma:
+#   echo "JWT_SECRET=$(openssl rand -base64 48)" > .env
+#   docker compose up --build
+# Uygulama: http://localhost:3000   API dokümantasyonu: http://localhost:8000/api/v1/docs
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: neurotrack
+      POSTGRES_PASSWORD: neurotrack
+      POSTGRES_DB: neurotrack
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neurotrack"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+psycopg://neurotrack:neurotrack@db:5432/neurotrack
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET tanımlı değil; README'deki kurulum adımına bakın}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CORS_ORIGINS: '["http://localhost:3000"]'
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SEED_DEMO: ${SEED_DEMO:-true}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  pgdata:

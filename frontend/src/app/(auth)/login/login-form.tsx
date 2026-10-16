@@ -38,7 +38,9 @@ export function LoginForm() {
       <h1 className="text-2xl font-semibold tracking-tight">Tekrar hoş geldiniz</h1>
       <p className="mt-1.5 text-sm text-ink-2">Hesabınıza giriş yapın.</p>
 
+      {/* method=post: hydration öncesi gönderimde kimlik bilgileri URL'ye düşmesin. */}
       <form
+        method="post"
         className="mt-8 space-y-4"
         onSubmit={(e) => {
           e.preventDefault();

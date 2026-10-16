@@ -3,8 +3,8 @@ import type { NextConfig } from "next";
 const API_URL = process.env.API_URL ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  partialPrefetching: true,
+  // cacheComponents kapalı: veri tamamen istemcide çekiliyor, sunucu önbelleği kazanç sağlamıyor;
+  // açıkken 16.4.2'de statik sayfaların ilk ziyarette hydrate olmadığı görüldü.
   output: "standalone",
   turbopack: {
     rules: {

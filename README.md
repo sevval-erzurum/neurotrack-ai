@@ -1,319 +1,180 @@
 # NeuroTrack AI
 
-**NeuroTrack AI**, otizm spektrum bozukluğu için yapay zekâ destekli ön değerlendirme, günlük takip, klinik izleme ve doktor-hasta iletişimi sunan web ve mobil tabanlı bir takip platformudur.
+Otizm spektrumu için **açıklanabilir erken tarama**, günlük takip ve bakım ekibi iletişimi sunan
+full-stack bir platform. Ebeveynler, otizmli yetişkinler ve hekimler aynı veriye bakarak birlikte
+karar verir.
 
-Bu sistem kesin tanı koymak amacıyla değil; kullanıcı, ebeveyn ve uzmanlara karar destek sağlamak amacıyla geliştirilmiştir.
+> NeuroTrack bir tanı aracı değildir. Tarama sonuçları yalnızca uzman değerlendirmesine
+> yönlendirme amacı taşır.
 
----
+![Tanıtım sayfası](docs/screenshots/landing.png)
 
-## Proje Amacı
+## Neler var?
 
-Bu projenin amacı, yetişkin ve çocuk kullanıcılar için otizm spektrum bozukluğu belirtilerini dijital ortamda takip edebilen, makine öğrenmesi destekli ön değerlendirme yapabilen ve doktor-hasta/ebeveyn iletişimini kolaylaştıran bütünleşik bir platform geliştirmektir.
+| Rol | Yapabildikleri |
+|---|---|
+| **Ebeveyn** | Çocuk ekleme, 18–24 ay için Q-CHAT-10 taraması, günlük uyku/sosyal etkileşim/duygu/kriz kaydı, eğilim grafikleri, doktoru bakım ekibine ekleme, mesajlaşma |
+| **Yetişkin** | AQ-10 öz-değerlendirme, kişisel günlük takip ve uyarılar, bakım ekibiyle mesajlaşma |
+| **Doktor** | Uyarı ve risk düzeyine göre sıralı danışan listesi, ziyaretler arası veri, klinik gözlem, not ve sonraki görüşme tarihi |
+| **Herkes** | Takip verisini bağlam olarak kullanan "Deva" asistanı, bildirimler, açık/koyu tema |
 
-Platformda yetişkin kullanıcılar kendi testlerini ve günlük kayıtlarını oluşturabilirken, ebeveynler çocukları adına günlük takip ve çocuk otizm ön değerlendirme testi yapabilmektedir. Doktor kullanıcıları ise kendilerine atanmış yetişkin ve çocuk hastaları takip edebilmekte, test geçmişlerini inceleyebilmekte ve doktor notu ekleyebilmektedir.
+| Ebeveyn paneli | Takip ekranı |
+|---|---|
+| ![Ebeveyn paneli](docs/screenshots/parent-dashboard.png) | ![Takip ekranı](docs/screenshots/subject-overview.png) |
+| **Tarama sonucu ve açıklaması** | **Doktor paneli** |
+| ![Tarama sonucu](docs/screenshots/screening-result.png) | ![Doktor paneli](docs/screenshots/doctor-dashboard.png) |
+| **Model kartı** | **Koyu tema** |
+| ![Model kartı](docs/screenshots/model-card.png) | ![Koyu tema](docs/screenshots/adult-dark.png) |
 
----
+## Makine öğrenmesi: daha büyük değil, daha dürüst model
 
-## Temel Özellikler
+Ayrıntılar: [MODEL_CARD.md](MODEL_CARD.md) · uygulamada `/model` sayfası
 
-- Yetişkin kullanıcılar için makine öğrenmesi tabanlı otizm ön değerlendirme
-- Çocuk kullanıcılar için makine öğrenmesi tabanlı otizm ön değerlendirme
-- Ebeveyn çocuk takip paneli
-- Günlük duygu durumu ve davranış takibi
-- Klinik takip formları
-- Doktor hasta takip paneli
-- Çocuk ve yetişkin hasta geçmişi görüntüleme
-- Doktor notları ve takip önerileri
-- Bildirim sistemi
-- Doktor-hasta mesajlaşma sistemi
-- Deva AI chatbot destek modülü
-- Web arayüzü
-- Mobil uygulama desteği
+**Veri.** Q-CHAT, Polonya kohortu: 18–24 aylık 252 çocuk. Etiketler ADOS-2, ADI-R ve DSM-5 ile
+konmuş klinik tanılar. Yaygın kullanılan UCI otizm veri setleri ise bilinçli olarak dışarıda
+bırakıldı: bu setlerde etiket, soruların toplamından türetilmiş (`toplam > 6`). Bu yüzden her model
+%100'e yakın doğruluk gösterir, ama öğrendiği şey bir toplama işleminden ibarettir
+([data/README.md](backend/data/README.md)). Yetişkin taraması bu nedenle AQ-10'un yayımlanmış
+puanlama kuralıyla yapılıyor.
 
----
+**Yöntem.** Nested cross-validation kullanıldı: dışta 5 kat × 5 tekrar, içte 5 kat. 25 maddeden
+10'unun seçimi (RFE) ve hiperparametre araması her dış fold'un yalnızca eğitim kısmında yapıldı.
+Projenin önceki sürümü maddeleri tüm veri üzerinde seçtiği için başarıyı olduğundan yüksek
+gösteriyordu (0.944).
 
-## Kullanılan Teknolojiler
+| Model (10 madde) | AUC | Brier |
+|---|---|---|
+| Klasik toplam skor (25 madde, ML yok) | 0.847 ± 0.051 | — |
+| **Lojistik regresyon (seçilen)** | **0.934 ± 0.040** | 0.117 |
+| SVM (RBF) | 0.935 ± 0.040 | 0.104 |
+| Random Forest | 0.932 ± 0.040 | 0.107 |
+| XGBoost | 0.930 ± 0.038 | 0.111 |
 
-### Backend
+- Dört modelin farkı gürültü düzeyinde. Bu yüzden "tek standart hata" kuralıyla en basit ve tam
+  açıklanabilir model seçildi.
+- Eşik, tarama bağlamına göre duyarlılık ≥ 0.90 olacak şekilde seçildi: 0.44 eşiğinde duyarlılık
+  %90, özgüllük %81.
+- **Her tahmin açıklanır.** Her maddenin log-odds katkısı hesaplanıyor; katkıların toplamı modelin
+  çıktısını birebir veriyor (test edildi).
+- Bulgu: *nesneleri sıraya dizme* ve *dar ilgi* maddeleri bu yaşta ters yönde ayırt ediyor
+  (kontrol grubunda daha yüksek). Bu durum model kartında belgelendi.
+- **Sınırlılık:** Örneklemin %54'ü otizm tanılı. Bu yüzden skor popülasyon riski olarak
+  sunulmuyor; yalnızca eşiğe göre yönlendirme yapılıyor.
 
-- Python
-- FastAPI
-- SQLAlchemy
-- SQLite
-- Scikit-learn
-- Joblib
-- Pandas
-- Uvicorn
+## Güvenlik ve gizlilik
 
-### Web Arayüzü
+- **Erişim veri sahibinden gelir.** Doktorlar kendilerini bir danışana ekleyemez; danışan veya
+  ebeveyn doktoru e-posta adresiyle bakım ekibine ekler. Tüm yetki kuralları tek bir modülde:
+  [`services/access.py`](backend/app/services/access.py).
+- Başka bir kullanıcıya ait kayıt 403 yerine **404** döner; ID tahminiyle kaydın var olduğu
+  anlaşılamaz. Bunu kanıtlayan testler: [`test_access_control.py`](backend/tests/test_access_control.py).
+- JWT, **httpOnly + SameSite=Lax** cookie içinde taşınır. API, Next.js üzerinden aynı origin'den
+  sunulduğu için JavaScript token'a erişemez.
+- bcrypt ile şifre saklama, yalnızca başarısız denemeleri sayan giriş hız sınırı, yanıt
+  süresinden hesap varlığının anlaşılmasına karşı sabit maliyetli doğrulama.
+- **LLM gizliliği:** Asistana isim veya kimlik bilgisi gönderilmez; yalnızca son 14 günün özet
+  istatistikleri bağlam olarak eklenir. Kriz ifadeleri model çağrısından bağımsız yakalanır ve
+  yanıta her durumda acil yardım bilgisi eklenir.
 
-- Streamlit
-- Requests
-- Pandas
+## Mimari
 
-### Mobil Uygulama
-
-- React Native
-- Expo
-- JavaScript / TypeScript
-- Expo Go
-
----
-
-## Proje Yapısı
-
-```text
-autism-tracking-ai/
-│
-├── app/
-│   ├── main.py
-│   ├── models.py
-│   ├── database.py
-│   ├── model/
-│   │   ├── adult_model.pkl
-│   │   ├── child_model.pkl
-│   │   └── train_child_model.py
-│   └── utils/
-│       ├── predict.py
-│       └── predict_child.py
-│
-├── data/
-│   └── child.csv
-│
-├── web_app.py              # Web arayüzü giriş noktası (router)
-├── web/
-│   ├── ui/
-│   │   ├── theme.py        # Tasarım sistemi: renk/tipografi token'ları, global CSS
-│   │   ├── components.py   # Kart, istatistik kutusu, rozet, sohbet balonu
-│   │   ├── shell.py        # Sidebar navigasyon ve uygulama kabuğu
-│   │   └── state.py        # Oturum durumu ve yönlendirme
-│   ├── services/
-│   │   └── api.py          # Backend API istemcisi
-│   └── views/              # Sayfalar (auth, home, adult, parent, doctor, comms, deva)
-│
-├── .streamlit/
-│   └── config.toml         # Streamlit tema ayarları
-│
-├── frontend.py             # Eski tek dosyalık arayüz (web_app.py ile değiştirildi)
-│
-├── App.js
-├── app.json
-├── package.json
-├── package-lock.json
-│
-├── navigation/
-├── screens/
-├── services/
-├── components/
-├── constants/
-├── assets/
-│
-└── README.md
+```mermaid
+flowchart LR
+    B[Tarayıcı] -->|/ ve /api/v1/*| N[Next.js 16<br/>App Router]
+    N -->|rewrite, aynı origin| F[FastAPI]
+    F --> DB[(PostgreSQL / SQLite)]
+    F --> M[scikit-learn modeli<br/>+ açıklama]
+    F -.isteğe bağlı.-> G[Gemini API]
 ```
 
----
+| Katman | Teknoloji |
+|---|---|
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4, TanStack Query, Recharts |
+| Backend | FastAPI, SQLAlchemy 2, Alembic, Pydantic 2, PyJWT, bcrypt |
+| ML | scikit-learn, XGBoost (karşılaştırma), pandas |
+| LLM | Google Gemini (`google-genai`); anahtar yoksa kural tabanlı yanıt |
+| Altyapı | Docker Compose, PostgreSQL 17, GitHub Actions (SQLite + PostgreSQL test matrisi) |
 
-## Backend Kurulumu ve Çalıştırma
+## Çalıştırma
 
-Öncelikle proje klasörüne girilir:
+### Docker ile (önerilen)
 
 ```bash
-cd autism-tracking-ai
+echo "JWT_SECRET=$(openssl rand -base64 48)" > .env
+docker compose up --build
 ```
 
-Python sanal ortamı oluşturulur:
+- Uygulama: http://localhost:3000
+- API dokümantasyonu: http://localhost:8000/api/v1/docs
+
+Demo hesaplar otomatik oluşturulur (şifre: `demo1234`): `ebeveyn@example.com`,
+`yetiskin@example.com`, `doktor@example.com`. Giriş ekranındaki demo butonlarıyla tek tıkla da
+girilebilir. Asistanın Gemini kullanması için `.env` dosyasına `GEMINI_API_KEY=...` ekleyin.
+
+### Yerel geliştirme
 
 ```bash
-python3 -m venv venv
-```
+# Backend (Python 3.11+)
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+alembic upgrade head
+python -m app.seed
+uvicorn app.main:app --reload --port 8000
 
-Sanal ortam aktif edilir:
-
-```bash
-source venv/bin/activate
-```
-
-Gerekli Python paketleri kurulur:
-
-```bash
-pip install -r requirements.txt
-```
-
-> Python 3.11 veya üzeri gereklidir.
-
-Backend başlatılır:
-
-```bash
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8003
-```
-
-Backend çalıştıktan sonra API dokümantasyonu şu adresten görüntülenebilir:
-
-```text
-http://127.0.0.1:8003/docs
-```
-
----
-
-## Web Arayüzünü Çalıştırma
-
-Backend çalışırken yeni bir terminal açılır ve proje klasörüne girilir:
-
-```bash
-cd autism-tracking-ai
-```
-
-Sanal ortam aktif edilir:
-
-```bash
-source venv/bin/activate
-```
-
-Streamlit web arayüzü başlatılır:
-
-```bash
-python -m streamlit run web_app.py --server.port 8501
-```
-
-Web arayüzü tarayıcıda şu adresten açılır:
-
-```text
-http://localhost:8501
-```
-
----
-
-## Mobil Uygulamayı Çalıştırma
-
-Mobil uygulamayı çalıştırmak için Node.js kurulu olmalıdır.
-
-Proje klasörüne girilir:
-
-```bash
-cd autism-tracking-ai
-```
-
-Gerekli paketler kurulur:
-
-```bash
+# Frontend (Node 20.9+), ayrı bir terminalde
+cd frontend
 npm install
+npm run dev        # http://localhost:3000
 ```
 
-Expo uygulaması başlatılır:
+### Testler ve kontroller
 
 ```bash
-npx expo start -c
+cd backend && pytest && ruff check app tests     # 39 test
+cd frontend && npx eslint src && npx tsc --noEmit && npm run build
 ```
 
-Terminalde oluşan QR kod, telefondaki **Expo Go** uygulaması ile okutularak mobil uygulama çalıştırılabilir.
-
----
-
-## Mobil API Bağlantı Ayarı
-
-Mobil uygulamanın backend ile haberleşebilmesi için `services/api.js` dosyasındaki `API_URL` değeri güncellenmelidir.
-
-Bilgisayarın yerel IP adresi öğrenilir:
+### Modeli yeniden eğitmek
 
 ```bash
-ipconfig getifaddr en0
+cd backend
+python -m app.ml.train_toddler    # yaklaşık 1 dakika; artifacts/ altındaki model ve meta dosyasını yeniler
 ```
 
-Daha sonra `services/api.js` dosyasında aşağıdaki alan düzenlenir:
+## Proje yapısı
 
-```javascript
-export const API_URL = "http://BILGISAYAR_IP_ADRESI:8003";
+```
+backend/
+  app/
+    core/        ayarlar, veritabanı, JWT/bcrypt, kimlik doğrulama bağımlılıkları
+    routers/     auth, subjects, records, screenings, messages, notifications, assistant
+    services/    access (yetki), insights (uyarılar), assistant (LLM), ratelimit, notify
+    ml/          train_toddler (nested CV), toddler (tahmin + açıklama), aq10, artifacts/
+    models.py    SQLAlchemy modelleri (tek "Subject" modeli: yetişkin ve çocuk)
+    seed.py      demo verisi
+  migrations/    Alembic
+  tests/         pytest (yetki, kimlik doğrulama, tarama, uyarılar, mesajlaşma)
+  data/          veri setleri ve veri notları
+frontend/
+  src/app/       sayfalar: (auth), (app) panel, model kartı, tanıtım sayfası
+  src/components ui, grafikler, formlar, uygulama kabuğu
+  src/lib/       API istemcisi, sorgular, tipler, biçimlendirme
+  src/proxy.ts   oturum yönlendirmesi
+MODEL_CARD.md
+docker-compose.yml
 ```
 
-Örnek:
+## Bilinen sorunlar
 
-```javascript
-export const API_URL = "http://192.168.1.13:8003";
-```
+- Herkese açık `/model` sayfasında, boş önbellekli ilk ziyarette aralıklı olarak (testlerde
+  yaklaşık her 4 yüklemeden 1'inde) React hydration uyarısı (#418) görülüyor. React yalnızca
+  Next.js'in gizli metadata bölümünü istemcide yeniden çiziyor; görünen içerik değişmiyor. Sorun
+  Next.js 16.4'ün akışlı metadata davranışına kadar daraltıldı ama kesin kaynağı henüz bulunamadı.
 
-Web arayüzü ise varsayılan olarak şu API adresini kullanmaktadır:
+## Yol haritası
 
-```text
-http://127.0.0.1:8003
-```
-
----
-
-## Kullanıcı Rolleri
-
-Sistemde üç farklı kullanıcı rolü bulunmaktadır.
-
-### Yetişkin Kullanıcı
-
-- Otizm ön değerlendirme testi yapabilir.
-- Günlük duygu durumu kaydı oluşturabilir.
-- Klinik takip formu doldurabilir.
-- Doktor notlarını görüntüleyebilir.
-- Doktor ile mesajlaşabilir.
-- Bildirimlerini takip edebilir.
-
-### Ebeveyn Kullanıcı
-
-- Çocuk profili oluşturabilir.
-- Çocuk için günlük takip kaydı girebilir.
-- Çocuk otizm ön değerlendirme testi yapabilir.
-- Çocuk test geçmişini görüntüleyebilir.
-- Doktor notlarını görüntüleyebilir.
-- Doktor ile mesajlaşabilir.
-
-### Doktor Kullanıcı
-
-- Yetişkin hastaları takip edebilir.
-- Çocuk hastaları takip edebilir.
-- Hasta günlük kayıtlarını ve test geçmişlerini görüntüleyebilir.
-- Doktor notu ve takip önerisi ekleyebilir.
-- Mesajlaşma isteklerini kabul veya reddedebilir.
-- Hastalarla mesajlaşabilir.
-
----
-
-## Makine Öğrenmesi Kullanımı
-
-Projede yetişkin ve çocuk kullanıcılar için ayrı makine öğrenmesi modelleri kullanılmıştır.
-
-Yetişkin kullanıcılar için otizm ön değerlendirme modeli, yetişkin ASD tarama verileri kullanılarak eğitilmiştir. Çocuk kullanıcılar için ise çocuklara yönelik ASD tarama veri seti kullanılarak ayrı bir model oluşturulmuştur.
-
-Model girdileri genel olarak A1–A10 tarama skorları ve yaş bilgisinden oluşmaktadır. Model çıktısı, kullanıcıya düşük, orta veya yüksek risk düzeyinde destekleyici bir ön değerlendirme sunmaktadır.
-
----
-
-## Backend API Modülleri
-
-Projede kullanılan temel API modülleri şunlardır:
-
-- Kullanıcı kayıt ve giriş işlemleri
-- Yetişkin otizm tahmin işlemleri
-- Çocuk otizm tahmin işlemleri
-- Günlük kayıt işlemleri
-- Klinik takip işlemleri
-- Doktor-hasta eşleştirme işlemleri
-- Doktor notu işlemleri
-- Bildirim işlemleri
-- Mesajlaşma işlemleri
-- Deva AI chatbot işlemleri
-
-API uç noktaları backend çalıştırıldıktan sonra aşağıdaki adresten incelenebilir:
-
-```text
-http://127.0.0.1:8003/docs
-```
-
----
-
-## Önemli Not
-
-Bu uygulama kesin tanı koymaz. Sistem, makine öğrenmesi tabanlı ön değerlendirme ve takip desteği sunmak amacıyla geliştirilmiştir. Otizm spektrum bozukluğu tanısı yalnızca uzman hekimler ve ilgili klinik değerlendirme süreçleri sonucunda konulabilir.
-
----
-
-## Geliştirici
-
-**Şevval Erzurum**  
-**İsmail Egin**
-Bilgisayar Mühendisliği  
-Bitirme Projesi
+- Q-CHAT modelinin başka bir kohortta dış doğrulaması
+- Türkçe soru metinlerinin doğrulanmış uyarlamayla değiştirilmesi
+- Çoklu instance dağıtımı için Redis tabanlı hız sınırlama
+- Playwright uçtan uca testlerinin CI'a eklenmesi

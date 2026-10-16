@@ -3,16 +3,11 @@
 import { AlertTriangle, Database, FlaskConical, Scale, Target } from "lucide-react";
 
 import { AucComparison, CalibrationChart, RocChart, SelectionFrequency } from "@/components/charts";
-import { Badge, Card, CardHeader, ErrorState, PageHeader, Spinner } from "@/components/ui";
+import { Badge, Card, CardHeader, PageHeader } from "@/components/ui";
 import { formatDay } from "@/lib/format";
-import { useModelCard } from "@/lib/queries";
+import type { ModelCard } from "@/lib/types";
 
-export function ModelCardView() {
-  const card = useModelCard();
-  if (card.isPending) return <Spinner />;
-  if (card.error) return <ErrorState error={card.error} retry={() => card.refetch()} />;
-
-  const m = card.data;
+export function ModelCardView({ card: m }: { card: ModelCard }) {
   const chosen = m.models.find((r) => r.key === m.chosen_model)!;
   const candidates = m.models.filter((r) => r.key !== "logreg_25");
   const reference = m.models.find((r) => r.key === "logreg_25");

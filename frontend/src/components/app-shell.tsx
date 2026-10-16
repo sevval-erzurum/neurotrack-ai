@@ -17,6 +17,7 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 import { ROLE_LABEL } from "@/lib/format";
+import { useHydrated } from "@/lib/use-hydrated";
 import { useConversations, useLogout, useMe, useNotifications, useSubjects } from "@/lib/queries";
 
 import { Logo } from "./brand";
@@ -173,6 +174,8 @@ function SidebarFallback() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  // Veri odaklı kabuk hydration'dan sonra çizilir; bkz. useHydrated.
+  const hydrated = useHydrated();
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -181,9 +184,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[260px_1fr]">
       <aside className="sticky top-0 hidden h-dvh border-r border-line bg-surface lg:block">
-        <Suspense fallback={<SidebarFallback />}>
-          <Sidebar />
-        </Suspense>
+        {hydrated ? (
+          <Suspense fallback={<SidebarFallback />}>
+            <Sidebar />
+          </Suspense>
+        ) : (
+          <SidebarFallback />
+        )}
       </aside>
 
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-surface/90 px-4 backdrop-blur lg:hidden">
@@ -215,7 +222,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="min-w-0 px-4 py-6 sm:px-8 sm:py-8">
         <div className="mx-auto max-w-6xl">
-          <Suspense fallback={<Spinner />}>{children}</Suspense>
+          {hydrated ? <Suspense fallback={<Spinner />}>{children}</Suspense> : <Spinner />}
         </div>
       </main>
     </div>

@@ -12,7 +12,6 @@ import type {
   Instrument,
   Instruments,
   Message,
-  ModelCard,
   Note,
   Notification,
   Observation,
@@ -36,7 +35,6 @@ export const keys = {
   thread: (peer: number) => ["conversations", peer] as const,
   notifications: ["notifications"] as const,
   instruments: ["instruments"] as const,
-  modelCard: ["model-card"] as const,
 };
 
 // --- Oturum ----------------------------------------------------------------
@@ -171,9 +169,6 @@ export function useRunScreening(subjectId: number) {
     },
   });
 }
-
-export const useModelCard = () =>
-  useQuery({ queryKey: keys.modelCard, queryFn: () => api<ModelCard>("/model/card"), staleTime: Infinity });
 
 // --- İletişim ---------------------------------------------------------------
 

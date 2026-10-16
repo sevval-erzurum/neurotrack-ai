@@ -1,3 +1,4 @@
+import os
 from collections.abc import Callable, Iterator
 from datetime import date
 
@@ -13,10 +14,17 @@ from app.services.ratelimit import assistant_limiter, login_limiter
 API = "/api/v1"
 
 
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "sqlite://")
+
+
 @pytest.fixture
 def app():
-    # Tek bağlantı: bellek içi veritabanı test boyunca yaşar.
-    engine = make_engine("sqlite://", poolclass=StaticPool)
+    if TEST_DATABASE_URL == "sqlite://":
+        # Tek bağlantı: bellek içi veritabanı test boyunca yaşar.
+        engine = make_engine(TEST_DATABASE_URL, poolclass=StaticPool)
+    else:
+        engine = make_engine(TEST_DATABASE_URL)
+        Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
