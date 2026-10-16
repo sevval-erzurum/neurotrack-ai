@@ -140,6 +140,7 @@ cd frontend && npx eslint src && npx tsc --noEmit && npm run build
 ```bash
 cd backend
 python -m app.ml.train_toddler    # yaklaşık 1 dakika; artifacts/ altındaki model ve meta dosyasını yeniler
+                                  # (XGBoost karşılaştırması requirements-dev.txt ile gelir)
 ```
 
 ## Proje yapısı
@@ -164,13 +165,6 @@ frontend/
 MODEL_CARD.md
 docker-compose.yml
 ```
-
-## Bilinen sorunlar
-
-- Herkese açık `/model` sayfasında, boş önbellekli ilk ziyarette aralıklı olarak (testlerde
-  yaklaşık her 4 yüklemeden 1'inde) React hydration uyarısı (#418) görülüyor. React yalnızca
-  Next.js'in gizli metadata bölümünü istemcide yeniden çiziyor; görünen içerik değişmiyor. Sorun
-  Next.js 16.4'ün akışlı metadata davranışına kadar daraltıldı ama kesin kaynağı henüz bulunamadı.
 
 ## Yol haritası
 

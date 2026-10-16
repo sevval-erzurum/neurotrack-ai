@@ -1,11 +1,26 @@
 "use client";
 
 import { AlertTriangle, Database, FlaskConical, Scale, Target } from "lucide-react";
+import dynamic from "next/dynamic";
 
-import { AucComparison, CalibrationChart, RocChart, SelectionFrequency } from "@/components/charts";
-import { Badge, Card, CardHeader, PageHeader } from "@/components/ui";
+import { AucComparison, SelectionFrequency } from "@/components/model-figures";
+import { Badge, Card, CardHeader, PageHeader, Skeleton } from "@/components/ui";
 import { formatDay } from "@/lib/format";
 import type { ModelCard } from "@/lib/types";
+
+// recharts grafikleri yalnızca istemcide, hydration'dan sonra yüklenir. recharts sayfanın ilk
+// istemci paketinde olduğunda Next 16.4 + React 19.2'de kök aralıklı olarak yeniden hydrate
+// ediliyor ve <head> ile eşleşme bozuluyordu (React #418). ResponsiveContainer sunucuda zaten
+// boyut ölçemediği için grafiklerin SSR'ı bir şey kazandırmıyordu.
+const chartPlaceholder = () => <Skeleton className="aspect-square w-full max-w-sm" />;
+const RocChart = dynamic(() => import("@/components/charts").then((m) => m.RocChart), {
+  ssr: false,
+  loading: chartPlaceholder,
+});
+const CalibrationChart = dynamic(() => import("@/components/charts").then((m) => m.CalibrationChart), {
+  ssr: false,
+  loading: chartPlaceholder,
+});
 
 export function ModelCardView({ card: m }: { card: ModelCard }) {
   const chosen = m.models.find((r) => r.key === m.chosen_model)!;

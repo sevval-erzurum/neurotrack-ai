@@ -72,11 +72,36 @@ jobs:
       - run: npm run build
 
   docker:
-    name: Docker images
+    name: Docker stack smoke test
     runs-on: ubuntu-latest
     needs: [backend, frontend]
+    env:
+      JWT_SECRET: ci-only-secret-not-used-for-anything-real-0123456789
     steps:
       - uses: actions/checkout@v4
       - run: docker compose build
-        env:
-          JWT_SECRET: ci-only-secret-not-used-for-anything-real-0123456789
+      - name: Start stack
+        run: docker compose up -d --wait --wait-timeout 180
+      - name: Smoke test
+        run: |
+          set -eu
+          base=http://localhost:3000
+          until curl -sf -o /dev/null "$base/"; do sleep 2; done
+          for path in / /login /register /model; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$base$path")
+            echo "$path -> $code"; test "$code" = 200
+          done
+          # Model kartı sunucu tarafında API'den çekiliyor: içerik HTML'de olmalı.
+          curl -sf "$base/model" | grep -q "AUC (nested CV)"
+          # Oturumsuz panel isteği girişe yönlenmeli.
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$base/dashboard")" = 307
+          # Demo hesapla giriş, Next.js rewrite'ı üzerinden API ve cookie.
+          curl -sf -c jar -H 'content-type: application/json' \
+            -d '{"email":"ebeveyn@example.com","password":"demo1234"}' "$base/api/v1/auth/login" > /dev/null
+          curl -sf -b jar "$base/api/v1/auth/me" | grep -q '"role":"parent"'
+          curl -sf -b jar "$base/api/v1/subjects" | grep -q '"kind":"child"'
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - if: always()
+        run: docker compose down -v
