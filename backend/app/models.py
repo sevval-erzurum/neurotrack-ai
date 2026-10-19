@@ -3,14 +3,16 @@
 Takip edilen her kişi bir `Subject`tir: yetişkin kullanıcının kendisi (kind="self") ya da
 ebeveynin eklediği bir çocuk (kind="child"). Günlük kayıtlar, klinik gözlemler, taramalar
 ve doktor notları yalnızca subject'e bağlanır; erişim kuralı tek yerde tanımlanır
-(app/services/access.py): subject'in sahibi veya bakım ekibindeki doktor.
+(app/services/access.py): subject'in sahibi veya bakım ekibindeki onaylı doktor.
+
+Yönetici hesapları yönetir (doktor onayı, erişim günlüğü) ama sağlık verisine erişemez.
 """
 
 from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import JSON, Date, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Date, DateTime, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -24,6 +26,14 @@ class Role(StrEnum):
     ADULT = "adult"
     PARENT = "parent"
     DOCTOR = "doctor"
+    ADMIN = "admin"
+
+
+class DoctorStatus(StrEnum):
+    PENDING = "pending"  # kayıt oldu, yönetici incelemesi bekliyor
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    SUSPENDED = "suspended"  # onaylıydı; erişimi yönetici tarafından durduruldu
 
 
 class SubjectKind(StrEnum):
@@ -41,7 +51,19 @@ class User(Base):
     role: Mapped[Role] = mapped_column(String(16))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
+    # Yalnızca doktorlar için. Onaylanmamış doktor hiçbir bakım ekibine eklenemez ve veri göremez.
+    doctor_status: Mapped[DoctorStatus | None] = mapped_column(String(16))
+    license_number: Mapped[str | None] = mapped_column(String(32))
+    institution: Mapped[str | None] = mapped_column(String(200))
+    status_reason: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
     subjects: Mapped[list["Subject"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+
+    @property
+    def is_verified_doctor(self) -> bool:
+        return self.role == Role.DOCTOR and self.doctor_status == DoctorStatus.APPROVED
 
 
 class Subject(Base):
@@ -166,3 +188,26 @@ class Notification(Base):
     link: Mapped[str | None] = mapped_column(String(200))
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AuditEvent(Base):
+    """Erişim günlüğü: kim, ne zaman, hangi kayda, ne yaptı ve sonuç ne oldu.
+
+    İstek gövdesi saklanmaz; günlükte sağlık verisi bulunmaz. subject_id ve kullanıcı alanları
+    bilinçli olarak yabancı anahtar değildir: kayıt silinse de iz kalır.
+    """
+
+    __tablename__ = "audit_events"
+    __table_args__ = (Index("ix_audit_subject_created", "subject_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    actor_id: Mapped[int | None] = mapped_column(index=True)
+    actor_role: Mapped[str | None] = mapped_column(String(16))
+    actor_label: Mapped[str | None] = mapped_column(String(320))  # ad veya (başarısız girişte) denenen e-posta
+    action: Mapped[str] = mapped_column(String(48), index=True)
+    outcome: Mapped[str] = mapped_column(String(8), index=True)  # ok | denied | error
+    status_code: Mapped[int]
+    subject_id: Mapped[int | None]
+    target_user_id: Mapped[int | None]
+    ip: Mapped[str | None] = mapped_column(String(64))

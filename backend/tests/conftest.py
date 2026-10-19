@@ -8,8 +8,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.db import Base, get_db, make_engine
+from app.core.security import hash_password
 from app.main import create_app
-from app.services.ratelimit import assistant_limiter, login_limiter
+from app.models import AuditEvent, DoctorStatus, Role, User
+from app.services.ratelimit import assistant_limiter, login_ip_limiter, login_limiter
 
 API = "/api/v1"
 
@@ -34,7 +36,9 @@ def app():
 
     application = create_app()
     application.dependency_overrides[get_db] = override_db
+    application.state.test_session = Session
     login_limiter.reset()
+    login_ip_limiter.reset()
     assistant_limiter.reset()
     yield application
     engine.dispose()
@@ -51,7 +55,8 @@ def make_user(app) -> Callable[..., TestClient]:
     """Kayıt olup oturum açmış ayrı bir istemci döndürür (her kullanıcının kendi cookie'si)."""
     clients: list[TestClient] = []
 
-    def factory(role: str, email: str | None = None, birth_date: date | None = None) -> TestClient:
+    def factory(role: str, email: str | None = None, birth_date: date | None = None, approved: bool = True) -> TestClient:
+        """Doktorlar varsayılan olarak onaylanır; onay akışını sınayan testler approved=False verir."""
         client = TestClient(app, base_url="http://testserver" + API)
         payload = {
             "full_name": f"Test {role.title()}",
@@ -61,15 +66,46 @@ def make_user(app) -> Callable[..., TestClient]:
         }
         if birth_date:
             payload["birth_date"] = birth_date.isoformat()
+        if role == "doctor":
+            payload |= {"license_number": f"TR-{1000 + len(clients)}", "institution": "Test Hastanesi"}
         response = client.post("/auth/register", json=payload)
         assert response.status_code == 201, response.text
         client.user = response.json()
+        if role == "doctor" and approved:
+            set_doctor_status(app, client.user["id"], DoctorStatus.APPROVED)
         clients.append(client)
         return client
 
     yield factory
     for client in clients:
         client.close()
+
+
+def set_doctor_status(app, user_id: int, status: DoctorStatus) -> None:
+    with app.state.test_session() as db:
+        db.get(User, user_id).doctor_status = status
+        db.commit()
+
+
+def audit_events(app, **filters) -> list[AuditEvent]:
+    with app.state.test_session() as db:
+        query = db.query(AuditEvent).filter_by(**filters).order_by(AuditEvent.id)
+        return query.all()
+
+
+@pytest.fixture
+def admin(app) -> Iterator[TestClient]:
+    """Yönetici kayıt formundan açılamaz; CLI'ın yaptığı gibi doğrudan veritabanına yazılır."""
+    with app.state.test_session() as db:
+        db.add(
+            User(email="admin@example.com", full_name="Yönetici", role=Role.ADMIN, password_hash=hash_password("admin-pass-123"))
+        )
+        db.commit()
+    with TestClient(app, base_url="http://testserver" + API) as client:
+        response = client.post("/auth/login", json={"email": "admin@example.com", "password": "admin-pass-123"})
+        assert response.status_code == 200, response.text
+        client.user = response.json()
+        yield client
 
 
 def months_ago(months: int, today: date | None = None) -> date:

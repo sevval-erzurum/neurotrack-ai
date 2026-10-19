@@ -3,10 +3,12 @@
 import {
   Bell,
   BrainCircuit,
+  ClipboardCheck,
   LayoutDashboard,
   LogOut,
   Menu,
   MessageSquare,
+  ScrollText,
   Sparkles,
   X,
   type LucideIcon,
@@ -18,7 +20,8 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { ROLE_LABEL } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
-import { useConversations, useLogout, useMe, useNotifications, useSubjects } from "@/lib/queries";
+import { useConversations, useDoctorApplications, useLogout, useMe, useNotifications, useSubjects } from "@/lib/queries";
+import type { User } from "@/lib/types";
 
 import { Logo } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
@@ -62,15 +65,14 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const me = useMe();
-  const subjects = useSubjects();
-  const conversations = useConversations();
   const notifications = useNotifications();
   const logout = useLogout();
 
-  const unreadMessages = conversations.data?.reduce((sum, c) => sum + c.unread, 0) ?? 0;
   const unreadNotifications = notifications.data?.filter((n) => !n.read_at).length ?? 0;
   const user = me.data;
-  const subjectsTitle = user?.role === "doctor" ? "Danışanlar" : user?.role === "parent" ? "Çocuklarım" : "Takibim";
+  // Yönetici sağlık verisine erişmez; onaylanmamış doktorun danışanı ve yazışması olamaz.
+  const isAdmin = user?.role === "admin";
+  const hasCareWork = !!user && !isAdmin && (user.role !== "doctor" || user.doctor_status === "approved");
 
   return (
     <div className="flex h-full flex-col" onClick={(e) => (e.target as HTMLElement).closest("a") && onNavigate?.()}>
@@ -81,13 +83,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 space-y-6 overflow-y-auto px-3" aria-label="Ana menü">
         <div className="space-y-0.5">
           <NavItem href="/dashboard" icon={LayoutDashboard} label="Genel bakış" active={pathname === "/dashboard"} />
-          <NavItem
-            href="/messages"
-            icon={MessageSquare}
-            label="Mesajlar"
-            count={unreadMessages}
-            active={pathname.startsWith("/messages")}
-          />
+          {hasCareWork && <MessagesNavItem active={pathname.startsWith("/messages")} />}
           <NavItem
             href="/notifications"
             icon={Bell}
@@ -95,42 +91,13 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             count={unreadNotifications}
             active={pathname.startsWith("/notifications")}
           />
-          <NavItem href="/assistant" icon={Sparkles} label="Deva asistan" active={pathname.startsWith("/assistant")} />
+          {!isAdmin && (
+            <NavItem href="/assistant" icon={Sparkles} label="Deva asistan" active={pathname.startsWith("/assistant")} />
+          )}
         </div>
 
-        <div>
-          <p className="px-2.5 pb-1.5 text-xs font-medium text-muted">{subjectsTitle}</p>
-          <div className="space-y-0.5">
-            {subjects.isPending && <Skeleton className="mx-2.5 h-7" />}
-            {subjects.data?.map((subject) => {
-              const href = `/subjects/${subject.id}`;
-              return (
-                <Link
-                  key={subject.id}
-                  href={href}
-                  aria-current={pathname.startsWith(href) ? "page" : undefined}
-                  className={cn(
-                    "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors",
-                    pathname.startsWith(href)
-                      ? "bg-surface-2 font-medium text-ink"
-                      : "text-ink-2 hover:bg-surface-2/70 hover:text-ink",
-                  )}
-                >
-                  <Avatar name={subject.name} className="size-6 text-[10px]" />
-                  <span className="flex-1 truncate">{subject.kind === "self" && subject.owner.id === user?.id ? "Benim takibim" : subject.name}</span>
-                  {subject.summary.alert_count > 0 && (
-                    <span className="size-2 rounded-full bg-warning" aria-label={`${subject.summary.alert_count} uyarı`} />
-                  )}
-                </Link>
-              );
-            })}
-            {subjects.data?.length === 0 && (
-              <p className="px-2.5 text-xs text-muted">
-                {user?.role === "doctor" ? "Henüz sizi ekleyen danışan yok." : "Henüz kayıt yok."}
-              </p>
-            )}
-          </div>
-        </div>
+        {isAdmin && <AdminNav pathname={pathname} />}
+        {hasCareWork && user && <SubjectNav pathname={pathname} user={user} />}
 
         <div>
           <p className="px-2.5 pb-1.5 text-xs font-medium text-muted">Şeffaflık</p>
@@ -156,6 +123,70 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <LogOut className="size-4" />
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function MessagesNavItem({ active }: { active: boolean }) {
+  const conversations = useConversations();
+  const unread = conversations.data?.reduce((sum, c) => sum + c.unread, 0) ?? 0;
+  return <NavItem href="/messages" icon={MessageSquare} label="Mesajlar" count={unread} active={active} />;
+}
+
+function AdminNav({ pathname }: { pathname: string }) {
+  const pending = useDoctorApplications("pending");
+  return (
+    <div>
+      <p className="px-2.5 pb-1.5 text-xs font-medium text-muted">Yönetim</p>
+      <div className="space-y-0.5">
+        <NavItem
+          href="/admin/doctors"
+          icon={ClipboardCheck}
+          label="Doktor onayları"
+          count={pending.data?.length}
+          active={pathname.startsWith("/admin/doctors")}
+        />
+        <NavItem href="/admin/audit" icon={ScrollText} label="Erişim günlüğü" active={pathname.startsWith("/admin/audit")} />
+      </div>
+    </div>
+  );
+}
+
+function SubjectNav({ pathname, user }: { pathname: string; user: User }) {
+  const subjects = useSubjects();
+  const title = user.role === "doctor" ? "Danışanlar" : user.role === "parent" ? "Çocuklarım" : "Takibim";
+
+  return (
+    <div>
+      <p className="px-2.5 pb-1.5 text-xs font-medium text-muted">{title}</p>
+      <div className="space-y-0.5">
+        {subjects.isPending && <Skeleton className="mx-2.5 h-7" />}
+        {subjects.data?.map((subject) => {
+          const href = `/subjects/${subject.id}`;
+          return (
+            <Link
+              key={subject.id}
+              href={href}
+              aria-current={pathname.startsWith(href) ? "page" : undefined}
+              className={cn(
+                "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors",
+                pathname.startsWith(href) ? "bg-surface-2 font-medium text-ink" : "text-ink-2 hover:bg-surface-2/70 hover:text-ink",
+              )}
+            >
+              <Avatar name={subject.name} className="size-6 text-[10px]" />
+              <span className="flex-1 truncate">{subject.kind === "self" && subject.owner.id === user.id ? "Benim takibim" : subject.name}</span>
+              {subject.summary.alert_count > 0 && (
+                <span className="size-2 rounded-full bg-warning" aria-label={`${subject.summary.alert_count} uyarı`} />
+              )}
+            </Link>
+          );
+        })}
+        {subjects.data?.length === 0 && (
+          <p className="px-2.5 text-xs text-muted">
+            {user.role === "doctor" ? "Henüz sizi ekleyen danışan yok." : "Henüz kayıt yok."}
+          </p>
+        )}
       </div>
     </div>
   );

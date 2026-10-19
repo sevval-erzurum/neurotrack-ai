@@ -1,6 +1,17 @@
 "use client";
 
-import { AlertOctagon, Bell, CalendarClock, ClipboardList, FileText, MessageSquare, UserPlus, type LucideIcon } from "lucide-react";
+import {
+  AlertOctagon,
+  Bell,
+  CalendarClock,
+  ClipboardCheck,
+  ClipboardList,
+  FileText,
+  MessageSquare,
+  ShieldCheck,
+  UserPlus,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Button, Card, EmptyState, ErrorState, PageHeader, Spinner } from "@/components/ui";
@@ -16,6 +27,8 @@ const ICON: Record<string, LucideIcon> = {
   screening: ClipboardList,
   risk: AlertOctagon,
   visit: CalendarClock,
+  doctor_application: ClipboardCheck,
+  account: ShieldCheck,
 };
 
 export default function NotificationsPage() {

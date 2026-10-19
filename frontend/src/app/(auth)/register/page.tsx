@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Baby, Stethoscope, UserRound } from "lucide-react";
+import { Baby, ShieldCheck, Stethoscope, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -12,7 +12,10 @@ import { cn } from "@/lib/cn";
 import { todayISO } from "@/lib/format";
 import type { Role, User } from "@/lib/types";
 
-const ROLES: { value: Role; title: string; text: string; icon: typeof Baby }[] = [
+// Yönetici hesabı kayıt formundan açılamaz.
+type RegisterRole = Exclude<Role, "admin">;
+
+const ROLES: { value: RegisterRole; title: string; text: string; icon: typeof Baby }[] = [
   { value: "parent", title: "Ebeveyn", text: "Çocuğumun gelişimini takip edeceğim", icon: Baby },
   { value: "adult", title: "Yetişkin", text: "Kendi takibimi yapacağım", icon: UserRound },
   { value: "doctor", title: "Doktor", text: "Danışanlarımı izleyeceğim", icon: Stethoscope },
@@ -20,14 +23,21 @@ const ROLES: { value: Role; title: string; text: string; icon: typeof Baby }[] =
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [role, setRole] = useState<Role>("parent");
-  const [form, setForm] = useState({ full_name: "", email: "", password: "", birth_date: "" });
+  const [role, setRole] = useState<RegisterRole>("parent");
+  const [form, setForm] = useState({ full_name: "", email: "", password: "", birth_date: "", license_number: "", institution: "" });
 
   const register = useMutation({
     mutationFn: () =>
       api<User>("/auth/register", {
         method: "POST",
-        json: { ...form, role, birth_date: role === "adult" && form.birth_date ? form.birth_date : null },
+        json: {
+          full_name: form.full_name,
+          email: form.email,
+          password: form.password,
+          role,
+          birth_date: role === "adult" && form.birth_date ? form.birth_date : null,
+          ...(role === "doctor" && { license_number: form.license_number, institution: form.institution }),
+        },
       }),
     onSuccess: () => router.replace("/dashboard"),
     meta: { silent: true },
@@ -101,6 +111,32 @@ export default function RegisterPage() {
           <Field label="Doğum tarihi" hint="AQ-10 taraması 16 yaş ve üzeri için geçerlidir.">
             {(id) => <Input id={id} type="date" max={todayISO()} value={form.birth_date} onChange={set("birth_date")} />}
           </Field>
+        )}
+
+        {role === "doctor" && (
+          <>
+            <Field label="Diploma tescil numarası" hint="Kimliğinizi doğrulamak için yönetici tarafından kontrol edilir.">
+              {(id) => (
+                <Input
+                  id={id}
+                  required
+                  pattern="[A-Za-z0-9\/\-]{4,32}"
+                  title="4-32 karakter; harf, rakam, / veya -"
+                  value={form.license_number}
+                  onChange={set("license_number")}
+                />
+              )}
+            </Field>
+            <Field label="Çalıştığınız kurum">
+              {(id) => (
+                <Input id={id} required minLength={2} maxLength={200} autoComplete="organization" value={form.institution} onChange={set("institution")} />
+              )}
+            </Field>
+            <p className="flex gap-2.5 rounded-xl bg-info-soft px-3 py-2.5 text-sm text-info-ink">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
+              Hesabınız bir yönetici onayladıktan sonra etkinleşir. Onaydan önce danışanlar sizi bakım ekibine ekleyemez.
+            </p>
+          </>
         )}
 
         {register.error && (

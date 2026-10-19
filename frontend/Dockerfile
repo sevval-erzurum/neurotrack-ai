@@ -8,14 +8,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-# Rewrite hedefi derleme sırasında manifest'e yazılır.
-ARG API_URL=http://backend:8000
-ENV API_URL=$API_URL
 RUN npm run build
 
 FROM node:22-alpine AS run
 WORKDIR /app
-# Model kartı sayfası veriyi sunucu tarafında çeker.
+# API proxy'si (app/api/v1) ve model kartı sayfası backend'e çalışma anında bu adresten ulaşır.
 ARG API_URL=http://backend:8000
 ENV API_URL=$API_URL \
     NODE_ENV=production \

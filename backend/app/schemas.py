@@ -1,9 +1,9 @@
 from datetime import UTC, date, datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, StringConstraints
+from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, StringConstraints, model_validator
 
-from app.models import Role, SubjectKind
+from app.models import DoctorStatus, Role, SubjectKind
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -25,12 +25,28 @@ class ORM(BaseModel):
 # --- Kimlik ---------------------------------------------------------------
 
 
+LicenseNumber = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^[A-Za-z0-9/-]{4,32}$")]
+Reason = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=500)]
+
+
 class RegisterIn(BaseModel):
     full_name: Name
     email: EmailStr
     password: Annotated[str, Field(min_length=8, max_length=72)]
-    role: Role
+    # Yönetici hesabı kayıt formundan açılamaz; yalnızca `python -m app.cli create-admin` ile.
+    role: Literal[Role.PARENT, Role.ADULT, Role.DOCTOR]
     birth_date: date | None = None
+    # Doktor başvurusu: yönetici bu bilgilerle kimliği doğrular.
+    license_number: LicenseNumber | None = None
+    institution: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=200)] | None = None
+
+    @model_validator(mode="after")
+    def doctor_needs_credentials(self) -> "RegisterIn":
+        if self.role == Role.DOCTOR and not (self.license_number and self.institution):
+            raise ValueError("Doktor kaydı için diploma tescil numarası ve kurum gereklidir.")
+        if self.role != Role.DOCTOR:
+            self.license_number = self.institution = None
+        return self
 
 
 class LoginIn(BaseModel):
@@ -43,6 +59,8 @@ class UserOut(ORM):
     email: str
     full_name: str
     role: Role
+    doctor_status: DoctorStatus | None = None
+    status_reason: str | None = None
 
 
 class UserBrief(ORM):
@@ -70,6 +88,8 @@ class DoctorOut(ORM):
     id: int
     full_name: str
     email: str
+    institution: str | None = None
+    doctor_status: DoctorStatus | None = None
 
 
 class SubjectOut(ORM):
@@ -204,3 +224,64 @@ class ChatIn(BaseModel):
 class ChatOut(BaseModel):
     reply: str
     source: Literal["gemini", "fallback"]
+
+
+# --- Yönetim ----------------------------------------------------------------
+
+
+class DoctorApplicationOut(ORM):
+    id: int
+    full_name: str
+    email: str
+    license_number: str | None
+    institution: str | None
+    doctor_status: DoctorStatus | None
+    status_reason: str | None
+    created_at: UTCDateTime
+    reviewed_at: UTCDateTime | None
+    patient_count: int = 0
+
+
+class ReviewIn(BaseModel):
+    reason: Reason | None = None
+
+
+class ReasonIn(BaseModel):
+    reason: Reason
+
+
+class AuditEventOut(ORM):
+    id: int
+    created_at: UTCDateTime
+    actor_id: int | None
+    actor_role: str | None
+    actor_label: str | None
+    action: str
+    outcome: Literal["ok", "denied", "error"]
+    status_code: int
+    subject_id: int | None
+    target_user_id: int | None
+    ip: str | None
+
+
+class AuditPage(BaseModel):
+    items: list[AuditEventOut]
+    next_before_id: int | None
+
+
+class AdminOverview(BaseModel):
+    users_by_role: dict[str, int]
+    doctors_by_status: dict[str, int]
+    denied_last_24h: int
+    failed_logins_last_24h: int
+    events_last_24h: int
+
+
+class AccessLogEntry(ORM):
+    """Veri sahibine gösterilen geçmiş satırı: IP ve iç kimlikler yer almaz."""
+
+    id: int
+    created_at: UTCDateTime
+    actor_label: str | None
+    actor_role: str | None
+    action: str

@@ -1,4 +1,5 @@
-export type Role = "adult" | "parent" | "doctor";
+export type Role = "adult" | "parent" | "doctor" | "admin";
+export type DoctorStatus = "pending" | "approved" | "rejected" | "suspended";
 export type Mood = "happy" | "calm" | "tired" | "anxious" | "sad" | "angry";
 export type RiskLevel = "low" | "elevated" | "high";
 export type Instrument = "qchat10" | "aq10";
@@ -8,6 +9,8 @@ export interface User {
   email: string;
   full_name: string;
   role: Role;
+  doctor_status: DoctorStatus | null;
+  status_reason: string | null;
 }
 
 export interface UserBrief {
@@ -20,6 +23,8 @@ export interface Doctor {
   id: number;
   full_name: string;
   email: string;
+  institution: string | null;
+  doctor_status: DoctorStatus | null;
 }
 
 export interface Summary {
@@ -204,4 +209,63 @@ export interface ModelCard {
   item_selection_frequency: { item: number; short: string; frequency: number }[];
   dataset: { name: string; n: number; n_asd: number; n_control: number; source: string; label_source: string };
   evaluation: { outer_cv: string; inner_cv: string; threshold_note: string };
+}
+
+// --- Yönetim ve erişim günlüğü -------------------------------------------------
+
+export interface DoctorApplication {
+  id: number;
+  full_name: string;
+  email: string;
+  license_number: string | null;
+  institution: string | null;
+  doctor_status: DoctorStatus;
+  status_reason: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  patient_count: number;
+}
+
+export type AuditOutcome = "ok" | "denied" | "error";
+
+export interface AuditEvent {
+  id: number;
+  created_at: string;
+  actor_id: number | null;
+  actor_role: Role | null;
+  actor_label: string | null;
+  action: string;
+  outcome: AuditOutcome;
+  status_code: number;
+  subject_id: number | null;
+  target_user_id: number | null;
+  ip: string | null;
+}
+
+export interface AuditPage {
+  items: AuditEvent[];
+  next_before_id: number | null;
+}
+
+export interface AuditFilters {
+  outcome?: AuditOutcome;
+  action?: string;
+  actor_id?: number;
+  subject_id?: number;
+}
+
+export interface AdminOverview {
+  users_by_role: Partial<Record<Role, number>>;
+  doctors_by_status: Partial<Record<DoctorStatus, number>>;
+  denied_last_24h: number;
+  failed_logins_last_24h: number;
+  events_last_24h: number;
+}
+
+export interface AccessLogEntry {
+  id: number;
+  created_at: string;
+  actor_label: string | null;
+  actor_role: Role | null;
+  action: string;
 }

@@ -29,6 +29,7 @@ export const config = {
     "/messages/:path*",
     "/notifications/:path*",
     "/assistant/:path*",
+    "/admin/:path*",
     "/login",
     "/register",
   ],

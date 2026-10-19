@@ -7,7 +7,8 @@ from sqlalchemy import text
 from app.core.config import get_settings
 from app.core.deps import DB
 from app.ml import toddler
-from app.routers import assistant, auth, messages, notifications, records, screenings, subjects
+from app.routers import admin, assistant, auth, messages, notifications, records, screenings, subjects
+from app.services import audit
 
 API_PREFIX = "/api/v1"
 
@@ -52,8 +53,10 @@ def create_app() -> FastAPI:
         messages.router,
         notifications.router,
         assistant.router,
+        admin.router,
     ):
         app.include_router(router, prefix=API_PREFIX)
+    audit.install(app)
     return app
 
 

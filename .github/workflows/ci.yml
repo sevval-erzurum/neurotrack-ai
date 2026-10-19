@@ -95,11 +95,19 @@ jobs:
           curl -sf "$base/model" | grep -q "AUC (nested CV)"
           # Oturumsuz panel isteği girişe yönlenmeli.
           test "$(curl -s -o /dev/null -w '%{http_code}' "$base/dashboard")" = 307
-          # Demo hesapla giriş, Next.js rewrite'ı üzerinden API ve cookie.
+          # Demo hesapla giriş, Next.js API proxy'si üzerinden (aynı origin) ve cookie.
           curl -sf -c jar -H 'content-type: application/json' \
             -d '{"email":"ebeveyn@example.com","password":"demo1234"}' "$base/api/v1/auth/login" > /dev/null
           curl -sf -b jar "$base/api/v1/auth/me" | grep -q '"role":"parent"'
           curl -sf -b jar "$base/api/v1/subjects" | grep -q '"kind":"child"'
+          # Ebeveyn yönetim uçlarına erişemez; yönetici erişir ama sağlık verisi göremez.
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b jar "$base/api/v1/admin/overview")" = 403
+          curl -sf -c admin -H 'content-type: application/json' \
+            -d '{"email":"yonetici@example.com","password":"demo1234"}' "$base/api/v1/auth/login" > /dev/null
+          curl -sf -b admin "$base/api/v1/admin/doctors?status=pending" | grep -q 'bekleyen.doktor@example.com'
+          test "$(curl -s -b admin "$base/api/v1/subjects")" = "[]"
+          # Erişim günlüğü yazılıyor.
+          curl -sf -b admin "$base/api/v1/admin/audit?action=auth.login" | grep -q '"auth.login"'
       - name: Logs on failure
         if: failure()
         run: docker compose logs --no-color

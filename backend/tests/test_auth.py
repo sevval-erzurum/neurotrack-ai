@@ -51,6 +51,29 @@ def test_login_is_rate_limited(make_user, anon):
     assert codes[10] == 429
 
 
+def test_rate_limit_cannot_be_bypassed_by_changing_ip(app, make_user):
+    """İstemci IP'si X-Forwarded-For'dan gelir ve taklit edilebilir; hesap sınırı IP'den bağımsızdır."""
+    from fastapi.testclient import TestClient
+
+    make_user("adult", email="spoof@example.com")
+    codes = []
+    for i in range(11):
+        with TestClient(app, base_url="http://testserver/api/v1", client=(f"10.0.0.{i}", 5000)) as client:
+            codes.append(client.post("/auth/login", json={"email": "spoof@example.com", "password": "guess"}).status_code)
+    assert codes[:10] == [401] * 10
+    assert codes[10] == 429
+
+
+def test_one_ip_cannot_spray_many_accounts(app, make_user):
+    from fastapi.testclient import TestClient
+
+    with TestClient(app, base_url="http://testserver/api/v1", client=("10.9.9.9", 5000)) as client:
+        attempts = [{"email": f"user{i}@example.com", "password": "x"} for i in range(51)]
+        codes = [client.post("/auth/login", json=body).status_code for body in attempts]
+    assert codes[:50] == [401] * 50
+    assert codes[50] == 429
+
+
 def test_successful_logins_do_not_count_towards_rate_limit(make_user, anon):
     make_user("parent", email="frequent@example.com")
     credentials = {"email": "frequent@example.com", "password": "correct-horse-1"}

@@ -28,6 +28,9 @@ services:
       CORS_ORIGINS: '["http://localhost:3000"]'
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       SEED_DEMO: ${SEED_DEMO:-true}
+      # Gerçek istemci IP'si (erişim günlüğü ve giriş hız sınırı için) X-Forwarded-For'dan okunur;
+      # bu başlığa yalnızca frontend container'ından gelen isteklerde güvenilir.
+      FORWARDED_ALLOW_IPS: 172.30.0.10
     ports:
       - "8000:8000"
     depends_on:
@@ -41,9 +44,18 @@ services:
         API_URL: http://backend:8000
     ports:
       - "3000:3000"
+    networks:
+      default:
+        ipv4_address: 172.30.0.10
     depends_on:
       backend:
         condition: service_healthy
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
 
 volumes:
   pgdata:

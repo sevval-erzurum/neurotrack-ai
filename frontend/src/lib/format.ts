@@ -1,4 +1,4 @@
-import type { Mood, RiskLevel, Role } from "./types";
+import type { DoctorStatus, Mood, RiskLevel, Role } from "./types";
 
 export const MOODS: { value: Mood; label: string; valence: -1 | 0 | 1 }[] = [
   { value: "happy", label: "Mutlu", valence: 1 },
@@ -15,7 +15,50 @@ export const ROLE_LABEL: Record<Role, string> = {
   adult: "Yetişkin",
   parent: "Ebeveyn",
   doctor: "Doktor",
+  admin: "Yönetici",
 };
+
+export const DOCTOR_STATUS_LABEL: Record<DoctorStatus, string> = {
+  pending: "Onay bekliyor",
+  approved: "Onaylı",
+  rejected: "Reddedildi",
+  suspended: "Askıda",
+};
+
+/** Erişim günlüğü eylem kodlarının (backend: services/audit.py) okunur karşılıkları. */
+export const ACTION_LABEL: Record<string, string> = {
+  "auth.register": "Hesap oluşturdu",
+  "auth.login": "Giriş",
+  "auth.logout": "Çıkış",
+  "subject.list": "Kayıt listesini açtı",
+  "subject.create": "Kayıt ekledi",
+  "subject.view": "Kaydı görüntüledi",
+  "subject.update": "Kaydı düzenledi",
+  "subject.delete": "Kaydı sildi",
+  "insights.view": "Eğilim ve uyarıları görüntüledi",
+  "access_log.view": "Erişim geçmişini görüntüledi",
+  "care_team.add": "Bakım ekibine doktor ekledi",
+  "care_team.remove": "Bakım ekibinden doktor çıkardı",
+  "log.list": "Günlük kayıtları görüntüledi",
+  "log.write": "Günlük kayıt yazdı",
+  "log.delete": "Günlük kayıt sildi",
+  "observation.list": "Klinik gözlemleri görüntüledi",
+  "observation.create": "Klinik gözlem ekledi",
+  "note.list": "Doktor notlarını görüntüledi",
+  "note.create": "Doktor notu yazdı",
+  "screening.list": "Taramaları görüntüledi",
+  "screening.create": "Tarama yaptı",
+  "screening.view": "Tarama sonucunu görüntüledi",
+  "assistant.chat": "Asistana kayıt bağlamıyla soru sordu",
+  "message.read": "Mesajları okudu",
+  "message.send": "Mesaj gönderdi",
+  "admin.doctor.approve": "Doktoru onayladı",
+  "admin.doctor.reject": "Doktor başvurusunu reddetti",
+  "admin.doctor.suspend": "Doktoru askıya aldı",
+  "admin.audit.view": "Erişim günlüğünü görüntüledi",
+};
+
+export const actionLabel = (action: string) => ACTION_LABEL[action] ?? action;
 
 export const RISK_LABEL: Record<RiskLevel, string> = {
   low: "Düşük",

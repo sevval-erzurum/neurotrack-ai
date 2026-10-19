@@ -1,13 +1,19 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "./api";
 import type {
+  AccessLogEntry,
+  AdminOverview,
+  AuditFilters,
+  AuditPage,
   Conversation,
   DailyLog,
   DailyLogInput,
   Doctor,
+  DoctorApplication,
+  DoctorStatus,
   Insights,
   Instrument,
   Instruments,
@@ -35,6 +41,11 @@ export const keys = {
   thread: (peer: number) => ["conversations", peer] as const,
   notifications: ["notifications"] as const,
   instruments: ["instruments"] as const,
+  accessLog: (id: number) => ["subjects", id, "access-log"] as const,
+  admin: ["admin"] as const,
+  adminOverview: ["admin", "overview"] as const,
+  adminDoctors: (status?: DoctorStatus) => ["admin", "doctors", status ?? "all"] as const,
+  adminAudit: (filters: AuditFilters) => ["admin", "audit", filters] as const,
 };
 
 // --- Oturum ----------------------------------------------------------------
@@ -92,6 +103,9 @@ export function useRemoveDoctor(subjectId: number) {
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.subjects }),
   });
 }
+
+export const useAccessLog = (id: number) =>
+  useQuery({ queryKey: keys.accessLog(id), queryFn: () => api<AccessLogEntry[]>(`/subjects/${id}/access-log`) });
 
 // --- Kayıtlar ---------------------------------------------------------------
 
@@ -203,5 +217,41 @@ export function useMarkNotification() {
     mutationFn: (id: number | "all") =>
       api<void>(id === "all" ? "/notifications/read-all" : `/notifications/${id}/read`, { method: "POST" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.notifications }),
+  });
+}
+
+// --- Yönetim ------------------------------------------------------------------
+
+export const useAdminOverview = () =>
+  useQuery({ queryKey: keys.adminOverview, queryFn: () => api<AdminOverview>("/admin/overview") });
+
+export const useDoctorApplications = (status?: DoctorStatus) =>
+  useQuery({
+    queryKey: keys.adminDoctors(status),
+    queryFn: () => api<DoctorApplication[]>(`/admin/doctors${status ? `?status=${status}` : ""}`),
+  });
+
+export type ReviewAction = "approve" | "reject" | "suspend";
+
+export function useReviewDoctor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action, reason }: { id: number; action: ReviewAction; reason?: string }) =>
+      api<DoctorApplication>(`/admin/doctors/${id}/${action}`, { method: "POST", json: reason ? { reason } : {} }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.admin }),
+  });
+}
+
+export function useAuditEvents(filters: AuditFilters) {
+  return useInfiniteQuery({
+    queryKey: keys.adminAudit(filters),
+    initialPageParam: undefined as number | undefined,
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({ limit: "50" });
+      for (const [key, value] of Object.entries(filters)) if (value !== undefined && value !== "") params.set(key, String(value));
+      if (pageParam !== undefined) params.set("before_id", String(pageParam));
+      return api<AuditPage>(`/admin/audit?${params}`);
+    },
+    getNextPageParam: (last) => last.next_before_id ?? undefined,
   });
 }

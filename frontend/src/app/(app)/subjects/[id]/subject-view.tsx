@@ -3,6 +3,7 @@
 import {
   CalendarClock,
   ClipboardList,
+  Eye,
   FileText,
   Microscope,
   Pencil,
@@ -17,6 +18,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { DoctorStatusBadge } from "@/components/admin";
 import { MoodStrip, TrendChart } from "@/components/charts";
 import { DailyLogDialog, MOOD_ICON, NoteDialog, ObservationDialog } from "@/components/forms";
 import {
@@ -37,8 +39,9 @@ import {
   Spinner,
 } from "@/components/ui";
 import { cn } from "@/lib/cn";
-import { INSTRUMENT_LABEL, formatAge, formatDate, formatDay, moodOf } from "@/lib/format";
+import { INSTRUMENT_LABEL, ROLE_LABEL, actionLabel, formatAge, formatDate, formatDay, formatTime, moodOf } from "@/lib/format";
 import {
+  useAccessLog,
   useAddDoctor,
   useDeleteLog,
   useDeleteSubject,
@@ -60,6 +63,7 @@ const TABS = [
   { key: "observations", label: "Klinik gözlemler" },
   { key: "notes", label: "Doktor notları" },
   { key: "team", label: "Bakım ekibi" },
+  { key: "access", label: "Erişim geçmişi", ownerOnly: true },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
 
@@ -67,7 +71,7 @@ export function SubjectView() {
   const id = Number(useParams<{ id: string }>().id);
   const params = useSearchParams();
   const router = useRouter();
-  const tab = (TABS.find((t) => t.key === params.get("tab"))?.key ?? "overview") as Tab;
+  const requestedTab = (TABS.find((t) => t.key === params.get("tab"))?.key ?? "overview") as Tab;
   const me = useMe();
   const subject = useSubject(id);
   const [logOpen, setLogOpen] = useState(false);
@@ -78,6 +82,8 @@ export function SubjectView() {
   const s = subject.data;
   const user = me.data;
   const isOwner = s.owner.id === user.id;
+  const tabs = TABS.filter((t) => isOwner || !("ownerOnly" in t));
+  const tab = tabs.some((t) => t.key === requestedTab) ? requestedTab : "overview";
   const title = s.kind === "self" && isOwner ? "Benim takibim" : s.name;
 
   return (
@@ -123,7 +129,7 @@ export function SubjectView() {
 
       <div className="-mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div role="tablist" aria-label="Bölümler" className="flex min-w-max gap-1 border-b border-line">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.key}
               role="tab"
@@ -147,6 +153,7 @@ export function SubjectView() {
         {tab === "observations" && <Observations subjectId={id} />}
         {tab === "notes" && <Notes subjectId={id} user={user} />}
         {tab === "team" && <Team subject={s} user={user} />}
+        {tab === "access" && isOwner && <AccessHistory subjectId={id} />}
       </div>
 
       {logOpen && <DailyLogDialog subjectId={id} subjectName={title} open onClose={() => setLogOpen(false)} />}
@@ -563,7 +570,7 @@ function Team({ subject, user }: { subject: Subject; user: User }) {
       <Card>
         <CardHeader
           title="Bakım ekibi"
-          description="Bu listedeki doktorlar kayıtları görebilir, gözlem ve not ekleyebilir, sizinle mesajlaşabilir."
+          description="Bu listedeki onaylı doktorlar kayıtları görebilir, gözlem ve not ekleyebilir, sizinle mesajlaşabilir. Askıdaki bir doktorun erişimi durdurulmuştur."
         />
         <ul className="divide-y divide-line px-5 py-2">
           {subject.care_team.length === 0 && <li className="py-6 text-center text-sm text-muted">Ekipte henüz doktor yok.</li>}
@@ -571,8 +578,14 @@ function Team({ subject, user }: { subject: Subject; user: User }) {
             <li key={d.id} className="flex items-center gap-3 py-3">
               <Avatar name={d.full_name} />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{d.full_name}</p>
-                <p className="truncate text-xs text-muted">{d.email}</p>
+                <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                  {d.full_name}
+                  {d.doctor_status && d.doctor_status !== "approved" && <DoctorStatusBadge status={d.doctor_status} />}
+                </p>
+                <p className="truncate text-xs text-muted">
+                  {d.email}
+                  {d.institution && ` · ${d.institution}`}
+                </p>
               </div>
               {(isOwner || d.id === user.id) && (
                 <Button
@@ -606,7 +619,9 @@ function Team({ subject, user }: { subject: Subject; user: User }) {
               <UserPlus className="size-4 text-brand" aria-hidden />
               Doktor ekle
             </h2>
-            <p className="mt-1 text-sm text-muted">Doktorunuzun NeuroTrack’e kayıtlı e-posta adresini girin.</p>
+            <p className="mt-1 text-sm text-muted">
+              Doktorunuzun NeuroTrack’e kayıtlı e-posta adresini girin. Yalnızca kimliği yönetici tarafından doğrulanmış doktorlar eklenebilir.
+            </p>
             <form
               className="mt-4 space-y-3"
               onSubmit={(e) => {
@@ -659,5 +674,43 @@ function Team({ subject, user }: { subject: Subject; user: User }) {
         </div>
       )}
     </div>
+  );
+}
+
+function AccessHistory({ subjectId }: { subjectId: number }) {
+  const log = useAccessLog(subjectId);
+
+  return (
+    <Card>
+      <CardHeader
+        title="Erişim geçmişi"
+        description="Bu kayda sizin dışınızda kimin, ne zaman, ne için eriştiği. Kendi işlemleriniz listelenmez."
+      />
+      {log.isPending && <Skeleton className="m-5 h-40" />}
+      {log.error && <ErrorState error={log.error} retry={() => log.refetch()} />}
+      {log.data?.length === 0 && (
+        <EmptyState icon={<Eye className="size-5" />} title="Henüz kimse erişmedi" description="Bakım ekibinden biri kaydı açtığında burada görünür." />
+      )}
+      {!!log.data?.length && (
+        <ol className="divide-y divide-line px-5 py-2">
+          {log.data.map((e) => (
+            <li key={e.id} className="flex items-center gap-3 py-3">
+              <Avatar name={e.actor_label ?? "?"} className="size-8 text-xs" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm">
+                  <span className="font-medium">{e.actor_label}</span>
+                  {e.actor_role && <span className="text-muted"> · {ROLE_LABEL[e.actor_role]}</span>}
+                </p>
+                <p className="text-sm text-ink-2">{actionLabel(e.action)}</p>
+              </div>
+              <time className="tabular shrink-0 text-right text-xs text-muted" dateTime={e.created_at}>
+                {formatDate(e.created_at)}
+                <span className="block">{formatTime(e.created_at)}</span>
+              </time>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Card>
   );
 }

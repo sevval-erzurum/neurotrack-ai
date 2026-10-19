@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.core.deps import DB, CurrentUser, require_role
-from app.models import CareTeamMember, Role, Subject, SubjectKind, User
-from app.schemas import CareTeamAdd, DoctorOut, SubjectCreate, SubjectOut, SubjectUpdate, UserBrief
-from app.services import insights
+from app.models import CareTeamMember, DoctorStatus, Role, Subject, SubjectKind, User
+from app.schemas import AccessLogEntry, CareTeamAdd, DoctorOut, SubjectCreate, SubjectOut, SubjectUpdate, UserBrief
+from app.services import audit, insights
 from app.services.access import Access, accessible_subjects, get_subject
 from app.services.notify import notify
 
@@ -83,9 +83,14 @@ def subject_insights(subject_id: int, user: CurrentUser, db: DB, days: int = 30)
 @router.post("/{subject_id}/care-team", response_model=DoctorOut, status_code=status.HTTP_201_CREATED)
 def add_doctor(subject_id: int, data: CareTeamAdd, user: CurrentUser, db: DB) -> User:
     subject = get_subject(db, user, subject_id, Access.OWNER)
-    doctor = db.scalar(select(User).where(User.email == data.email.lower(), User.role == Role.DOCTOR))
+    doctor = db.scalar(
+        select(User).where(
+            User.email == data.email.lower(), User.role == Role.DOCTOR, User.doctor_status == DoctorStatus.APPROVED
+        )
+    )
     if doctor is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Bu e-postaya kayıtlı bir doktor bulunamadı.")
+        # Başvurusu bekleyen, reddedilen veya askıdaki doktorlar da aynı yanıtı alır.
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Bu e-postaya kayıtlı, onaylı bir doktor bulunamadı.")
     if any(m.doctor_id == doctor.id for m in subject.care_team):
         raise HTTPException(status.HTTP_409_CONFLICT, "Bu doktor zaten bakım ekibinde.")
 
@@ -112,3 +117,10 @@ def remove_doctor(subject_id: int, doctor_id: int, user: CurrentUser, db: DB) ->
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Doktor bakım ekibinde değil.")
     subject.care_team.remove(member)
     db.commit()
+
+
+@router.get("/{subject_id}/access-log", response_model=list[AccessLogEntry])
+def access_log(subject_id: int, user: CurrentUser, db: DB, limit: int = 100) -> list:
+    """Veri sahibi, kaydına kendisi dışında kimin ne zaman eriştiğini görür."""
+    subject = get_subject(db, user, subject_id, Access.OWNER)
+    return audit.subject_history(db, subject, limit=min(limit, 500))

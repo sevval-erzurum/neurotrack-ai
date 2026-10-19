@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
+import { AdminDashboard, DoctorStatusPanel } from "@/components/admin";
 import { AddChildDialog, DailyLogDialog } from "@/components/forms";
 import {
   Avatar,
@@ -57,6 +58,8 @@ export default function DashboardPage() {
   }
   if (me.error || subjects.error) return <ErrorState error={me.error ?? subjects.error} retry={() => subjects.refetch()} />;
 
+  if (me.data.role === "admin") return <AdminDashboard user={me.data} />;
+  if (me.data.role === "doctor" && me.data.doctor_status !== "approved") return <DoctorStatusPanel user={me.data} />;
   return me.data.role === "doctor" ? (
     <DoctorDashboard user={me.data} subjects={subjects.data} />
   ) : (

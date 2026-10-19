@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, Baby, Stethoscope, UserRound } from "lucide-react";
+import { ArrowRight, Baby, Hourglass, ShieldCheck, Stethoscope, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -14,6 +14,8 @@ const DEMO = [
   { email: "ebeveyn@example.com", label: "Ebeveyn", who: "Elif Demir · 2 çocuk", icon: Baby },
   { email: "yetiskin@example.com", label: "Yetişkin", who: "Mert Aksoy · kendi takibi", icon: UserRound },
   { email: "doktor@example.com", label: "Doktor", who: "Dr. Zeynep Kaya · 2 danışan", icon: Stethoscope },
+  { email: "yonetici@example.com", label: "Yönetici", who: "Doktor onayları ve erişim günlüğü", icon: ShieldCheck },
+  { email: "bekleyen.doktor@example.com", label: "Onay bekleyen doktor", who: "Dr. Can Öztürk · başvuru inceleniyor", icon: Hourglass },
 ];
 
 function safeNext(value: string | null): string {

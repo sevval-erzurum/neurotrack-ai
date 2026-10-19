@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import and_, func, or_, select, update
 
 from app.core.deps import DB, CurrentUser
-from app.models import CareTeamMember, Message, Role, Subject, User, utcnow
+from app.models import CareTeamMember, DoctorStatus, Message, Role, Subject, User, utcnow
 from app.schemas import ConversationOut, MessageIn, MessageOut, UserBrief
 from app.services.access import can_message
 from app.services.notify import notify
@@ -20,6 +20,9 @@ def _between(a: int, b: int):
 
 
 def _contacts(db: DB, user: User) -> list[User]:
+    # Kişiler can_message ile aynı kurala uyar: onaylı olmayan doktorla yazışılamaz.
+    if user.role == Role.ADMIN or (user.role == Role.DOCTOR and not user.is_verified_doctor):
+        return []
     if user.role == Role.DOCTOR:
         stmt = (
             select(User)
@@ -32,7 +35,7 @@ def _contacts(db: DB, user: User) -> list[User]:
             select(User)
             .join(CareTeamMember, CareTeamMember.doctor_id == User.id)
             .join(Subject, Subject.id == CareTeamMember.subject_id)
-            .where(Subject.owner_id == user.id)
+            .where(Subject.owner_id == user.id, User.doctor_status == DoctorStatus.APPROVED)
         )
     return list(db.scalars(stmt.distinct().order_by(User.full_name)))
 

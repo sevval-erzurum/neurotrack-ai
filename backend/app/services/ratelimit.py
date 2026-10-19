@@ -47,5 +47,10 @@ class RateLimiter:
             self._hits.clear()
 
 
+# Giriş iki anahtarla sınırlanır. Hesap anahtarı IP'den bağımsızdır: istemci IP'si
+# X-Forwarded-For'dan geldiği ve taklit edilebildiği için tek başına IP'ye bağlı bir sınır
+# her denemede farklı adres yazılarak atlatılabilir. IP sınırı, tek kaynaktan çok sayıda
+# hesabın denenmesine karşı ek katmandır.
 login_limiter = RateLimiter(limit=10, window_seconds=15 * 60)
+login_ip_limiter = RateLimiter(limit=50, window_seconds=15 * 60)
 assistant_limiter = RateLimiter(limit=20, window_seconds=60)

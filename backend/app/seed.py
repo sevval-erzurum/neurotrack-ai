@@ -1,4 +1,4 @@
-"""Demo verisi: üç rol için hesaplar ve 45 günlük gerçekçi takip geçmişi.
+"""Demo verisi: dört rol için hesaplar ve 45 günlük gerçekçi takip geçmişi.
 
 Çalıştırma (backend/ dizininden):
     python -m app.seed            # yalnızca boş veritabanına yazar
@@ -12,16 +12,18 @@ import random
 from dataclasses import asdict
 from datetime import UTC, date, datetime, time, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import delete, or_, select
 
 from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.ml import aq10, toddler
 from app.models import (
+    AuditEvent,
     CareTeamMember,
     ClinicalObservation,
     DailyLog,
     DoctorNote,
+    DoctorStatus,
     Message,
     Notification,
     Role,
@@ -30,9 +32,16 @@ from app.models import (
     SubjectKind,
     User,
 )
+from app.services import audit
 
 PASSWORD = "demo1234"
-DEMO_EMAILS = ("ebeveyn@example.com", "yetiskin@example.com", "doktor@example.com")
+DEMO_EMAILS = (
+    "ebeveyn@example.com",
+    "yetiskin@example.com",
+    "doktor@example.com",
+    "yonetici@example.com",
+    "bekleyen.doktor@example.com",
+)
 DAYS = 45
 
 
@@ -78,7 +87,12 @@ def _logs(rng: random.Random, subject: Subject, author: User, today: date, profi
 
 
 def _remove_demo(db) -> None:
-    for user in db.scalars(select(User).where(User.email.in_(DEMO_EMAILS))):
+    users = list(db.scalars(select(User).where(User.email.in_(DEMO_EMAILS))))
+    user_ids = [u.id for u in users]
+    subject_ids = [s.id for u in users for s in u.subjects]
+    # Günlük yabancı anahtar kullanmaz; yeniden kullanılan ID'lerle eski kayıtlar karışmasın.
+    db.execute(delete(AuditEvent).where(or_(AuditEvent.actor_id.in_(user_ids), AuditEvent.subject_id.in_(subject_ids))))
+    for user in users:
         db.delete(user)
     db.commit()
 
@@ -97,9 +111,32 @@ def seed(reset: bool = False) -> None:
         pw = hash_password(PASSWORD)
         parent = User(email="ebeveyn@example.com", full_name="Elif Demir", role=Role.PARENT, password_hash=pw)
         adult = User(email="yetiskin@example.com", full_name="Mert Aksoy", role=Role.ADULT, password_hash=pw)
-        doctor = User(email="doktor@example.com", full_name="Dr. Zeynep Kaya", role=Role.DOCTOR, password_hash=pw)
-        db.add_all([parent, adult, doctor])
+        doctor = User(
+            email="doktor@example.com",
+            full_name="Dr. Zeynep Kaya",
+            role=Role.DOCTOR,
+            password_hash=pw,
+            doctor_status=DoctorStatus.APPROVED,
+            license_number="TR-2014-30871",
+            institution="Ankara Çocuk Gelişim Merkezi",
+            created_at=_at(today - timedelta(days=DAYS + 5), 9),
+            reviewed_at=_at(today - timedelta(days=DAYS + 4), 11),
+        )
+        admin = User(email="yonetici@example.com", full_name="Sistem Yöneticisi", role=Role.ADMIN, password_hash=pw)
+        # Onay akışını göstermek için başvurusu bekleyen bir doktor.
+        applicant = User(
+            email="bekleyen.doktor@example.com",
+            full_name="Dr. Can Öztürk",
+            role=Role.DOCTOR,
+            password_hash=pw,
+            doctor_status=DoctorStatus.PENDING,
+            license_number="TR-2019-48213",
+            institution="Özel Anka Çocuk Kliniği",
+            created_at=_at(today - timedelta(days=1), 15),
+        )
+        db.add_all([parent, adult, doctor, admin, applicant])
         db.flush()
+        doctor.reviewed_by_id = admin.id
 
         deniz = Subject(kind=SubjectKind.CHILD, name="Deniz", birth_date=_months_ago(today, 21), sex="male")
         ela = Subject(kind=SubjectKind.CHILD, name="Ela", birth_date=_months_ago(today, 62), sex="female")
@@ -232,6 +269,38 @@ def seed(reset: bool = False) -> None:
                 ),
             ]
         )
+        db.add(
+            Notification(
+                user_id=admin.id,
+                kind="doctor_application",
+                title="Yeni doktor başvurusu",
+                body="Dr. Can Öztürk (Özel Anka Çocuk Kliniği) onay bekliyor.",
+                link="/admin/doctors",
+                created_at=_at(today - timedelta(days=1), 15),
+            )
+        )
+
+        # Erişim geçmişi: veri sahibinin "kim baktı" ekranı boş görünmesin.
+        for days_ago, hour, action, subject in (
+            (34, 15, "subject.view", deniz),
+            (34, 15, "log.list", deniz),
+            (34, 16, "note.create", deniz),
+            (30, 12, "subject.view", mert),
+            (30, 12, "note.create", mert),
+            (3, 15, "subject.view", deniz),
+            (3, 15, "insights.view", deniz),
+            (3, 16, "note.create", deniz),
+            (1, 9, "subject.view", mert),
+            (1, 9, "log.list", mert),
+        ):
+            audit.record(
+                db,
+                action=action,
+                status_code=201 if action.endswith("create") else 200,
+                actor=doctor,
+                subject_id=subject.id,
+                created_at=_at(today - timedelta(days=days_ago), hour),
+            )
         db.commit()
 
     print("Demo verisi oluşturuldu. Hesaplar (şifre: demo1234):")

@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const API_URL = process.env.API_URL ?? "http://127.0.0.1:8000";
-
 const nextConfig: NextConfig = {
   // cacheComponents kapalı: veri tamamen istemcide çekiliyor, sunucu önbelleği kazanç sağlamıyor;
   // açıkken 16.4.2'de statik sayfaların ilk ziyarette hydrate olmadığı görüldü.
@@ -14,10 +12,7 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  // API aynı origin'den sunulur; böylece oturum cookie'si httpOnly + SameSite=Lax kalabilir.
-  async rewrites() {
-    return [{ source: "/api/v1/:path*", destination: `${API_URL}/api/v1/:path*` }];
-  },
+  // /api/v1/* isteklerini src/app/api/v1/[...path]/route.ts backend'e iletir (aynı origin).
   async headers() {
     return [
       {
