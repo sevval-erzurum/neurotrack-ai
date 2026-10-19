@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin",
 export const metadata: Metadata = {
   title: { default: "NeuroTrack — Otizm takip ve tarama platformu", template: "%s · NeuroTrack" },
   description:
-    "Klinik tanılarla eğitilmiş, açıklanabilir erken tarama; günlük takip ve bakım ekibiyle güvenli iletişim. Tanı aracı değildir.",
+    "Gerçek tanılarla eğitilmiş, açıklanabilir erken tarama; günlük takip ve bakım ekibiyle güvenli iletişim. Tanı aracı değildir.",
 };
 
 export const viewport: Viewport = {

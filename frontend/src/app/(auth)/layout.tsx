@@ -6,7 +6,7 @@ const POINTS = [
   {
     icon: BrainCircuit,
     title: "Açıklanabilir erken tarama",
-    text: "Klinik tanılarla eğitilmiş model, sonucu hangi yanıtların etkilediğini gösterir.",
+    text: "Gerçek tanılarla eğitilmiş model, sonucu hangi yanıtların etkilediğini gösterir.",
   },
   {
     icon: Stethoscope,

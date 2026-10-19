@@ -22,7 +22,7 @@ const ROLES = [
     icon: Baby,
     title: "Ebeveynler için",
     points: [
-      "18–24 ay için klinik tanılarla eğitilmiş Q-CHAT-10 taraması",
+      "18–24 ay için gerçek tanılarla eğitilmiş Q-CHAT kısa form taraması",
       "Uyku, sosyal etkileşim, duygu durumu ve kriz takibi",
       "Doktorunuzu ekleyin, notlarını ve randevularını görün",
     ],
@@ -127,7 +127,7 @@ export default function LandingPage() {
             <p className="text-sm font-medium text-brand">Yapay zekâ yaklaşımı</p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight">Daha büyük model değil, daha dürüst model.</h2>
             <p className="mt-3 text-ink-2">
-              252 çocukluk, klinik tanılı bir veri setinde karmaşık modeller ek kazanç sağlamıyor. Bunu kanıtlamak ve sonucu
+              252 çocukluk, gerçek tanılı bir veri setinde karmaşık modeller ek kazanç sağlamıyor. Bunu kanıtlamak ve sonucu
               açıklayabilmek, bir sağlık uygulamasında daha yüksek bir skordan daha değerli.
             </p>
           </div>
@@ -188,7 +188,7 @@ function ProductPreview() {
       <Card className="p-5">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted">Q-CHAT-10 sonucu · Deniz, 21 aylık</p>
+            <p className="text-xs text-muted">Q-CHAT sonucu · Deniz, 21 aylık</p>
             <p className="mt-1 font-semibold">Uzman değerlendirmesi öneriliyor</p>
           </div>
           <span className="rounded-full bg-warning-soft px-2.5 py-1 text-xs font-medium text-warning-ink">Değerlendirme</span>

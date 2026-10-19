@@ -262,7 +262,10 @@ def main() -> None:
             "n_asd": int(y.sum()),
             "n_control": int(len(y) - y.sum()),
             "source": "https://data.mendeley.com/datasets/tmpkt2mfkg/2",
-            "label_source": "ADOS-2 + ADI-R + DSM-5 klinik değerlendirme",
+            "label_source": (
+                "Rutin sağlık hizmetlerinde konmuş otizm tanısı (veri setinde 'community-based diagnosis'); "
+                "tanı yöntemi belirtilmemiş, anket puanından türetilmemiş"
+            ),
         },
         "evaluation": {
             "outer_cv": "RepeatedStratifiedKFold(5 kat x 5 tekrar)",

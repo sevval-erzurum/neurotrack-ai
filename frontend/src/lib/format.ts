@@ -66,7 +66,7 @@ export const RISK_LABEL: Record<RiskLevel, string> = {
   high: "Yüksek",
 };
 
-export const INSTRUMENT_LABEL = { qchat10: "Q-CHAT-10", aq10: "AQ-10" } as const;
+export const INSTRUMENT_LABEL = { qchat10: "Q-CHAT kısa form", aq10: "AQ-10" } as const;
 
 const dateFmt = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric" });
 const shortFmt = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "short" });

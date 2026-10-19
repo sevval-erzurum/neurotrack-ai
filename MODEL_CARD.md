@@ -12,7 +12,7 @@ Tanı aracı değildir.
 |---|---|
 | Kaynak | Q-CHAT, Polonya kohortu, [Mendeley Data 10.17632/tmpkt2mfkg.2](https://data.mendeley.com/datasets/tmpkt2mfkg/2) |
 | Örneklem | 252 çocuk (135 otizm, 117 tipik gelişim), 18–24 ay |
-| Etiket | ADOS-2 + ADI-R + DSM-5 ile klinik tanı (anket skorundan türetilmemiş) |
+| Etiket | Rutin sağlık hizmetlerinde konmuş otizm tanısı (veri setinde "community-based diagnosis"); tanı yöntemi belirtilmemiş, anket puanından türetilmemiş |
 
 Projedeki UCI `adult.csv` / `child.csv` setleri model eğitiminde **kullanılmaz**: bu setlerde
 etiket, 10 maddenin toplamından deterministik olarak türetilmiştir (bkz. `data/README.md`).
@@ -74,3 +74,8 @@ maddelerin klinik anlamı olarak yorumlanmamalıdır.
   nedenle çalışma noktasındaki duyarlılık/özgüllük hafif iyimser olabilir.
 - Uygulamadaki Türkçe soru metinleri bu proje için çevrilmiştir; doğrulanmış bir Türkçe
   Q-CHAT uyarlaması değildir.
+- **Kısa form yayımlanmış Q-CHAT-10 değildir.** Maddeler bu veride RFE ile seçilmiştir; puanlama
+  0–4 ve sonuç bir kesme puanından değil modelden gelir.
+- **Etiket kalitesi bilinmiyor.** Tanılar rutin hizmette konmuştur ve tanı yöntemi veri setinde
+  belirtilmemiştir. Bazı ikincil kaynaklar ADOS-2/ADI-R kullanıldığını yazsa da birincil kaynak
+  bunu doğrulamıyor (bkz. `backend/data/README.md`).

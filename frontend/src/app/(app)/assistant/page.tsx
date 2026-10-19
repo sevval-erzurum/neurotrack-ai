@@ -18,7 +18,7 @@ const SUGGESTIONS: Record<string, string[]> = {
     "Uyku rutinini nasıl oturtabiliriz?",
   ],
   adult: ["Bu haftaki kayıtlarımda dikkat çeken ne var?", "Kalabalık ortamlarda duyusal yüklenmeyle nasıl başa çıkarım?"],
-  doctor: ["Bu danışanın son 14 günlük verisini klinik açıdan özetle.", "Q-CHAT-10'un 18–24 ay için sınırlılıkları nelerdir?"],
+  doctor: ["Bu danışanın son 14 günlük verisini klinik açıdan özetle.", "Q-CHAT taramasının 18–24 ay için sınırlılıkları nelerdir?"],
 };
 
 export default function AssistantPage() {

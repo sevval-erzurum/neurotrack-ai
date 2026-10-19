@@ -38,7 +38,7 @@ export function ModelCardView({ card: m }: { card: ModelCard }) {
             <span>Eğitim: {formatDay(m.trained_on)}</span>
           </span>
         }
-        title="Model kartı: Q-CHAT-10 küçük çocuk taraması"
+        title="Model kartı: Q-CHAT kısa form küçük çocuk taraması"
         description="Modelin nasıl değerlendirildiği, neden bu modelin seçildiği ve nerede yanılabileceği."
       />
 
@@ -153,7 +153,7 @@ export function ModelCardView({ card: m }: { card: ModelCard }) {
           Yaygın kullanılan UCI otizm tarama veri setlerinde etiket, 10 sorunun toplamından deterministik olarak türetilmiştir
           (toplam &gt; 6). Bu veriyle eğitilen her model %100’e yakın doğruluk gösterir, ama öğrendiği şey otizm değil bir
           toplama işlemidir. Bu nedenle yetişkin taraması AQ-10’un yayımlanmış puanlama kuralıyla yapılır; makine öğrenmesi
-          yalnızca etiketi gerçek klinik tanıdan gelen Q-CHAT verisinde kullanılır.
+          yalnızca etiketi anket puanından bağımsız, gerçek tanıdan gelen Q-CHAT verisinde kullanılır.
         </p>
       </Card>
     </>

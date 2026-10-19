@@ -13,7 +13,7 @@ karar verir.
 
 | Rol | Yapabildikleri |
 |---|---|
-| **Ebeveyn** | Çocuk ekleme, 18–24 ay için Q-CHAT-10 taraması, günlük uyku/sosyal etkileşim/duygu/kriz kaydı, eğilim grafikleri, doktoru bakım ekibine ekleme, mesajlaşma |
+| **Ebeveyn** | Çocuk ekleme, 18–24 ay için Q-CHAT kısa form (10 madde) taraması, günlük uyku/sosyal etkileşim/duygu/kriz kaydı, eğilim grafikleri, doktoru bakım ekibine ekleme, mesajlaşma |
 | **Yetişkin** | AQ-10 öz-değerlendirme, kişisel günlük takip ve uyarılar, bakım ekibiyle mesajlaşma |
 | **Doktor** | Uyarı ve risk düzeyine göre sıralı danışan listesi, ziyaretler arası veri, klinik gözlem, not ve sonraki görüşme tarihi. Hesap, yönetici diploma tescil numarasını ve kurumu doğrulayana kadar hiçbir veriye erişemez |
 | **Yönetici** | Doktor başvurularını onaylama, reddetme, askıya alma; erişim günlüğü ve güvenlik özeti. **Sağlık verisine erişemez** |
@@ -31,8 +31,9 @@ karar verir.
 
 Ayrıntılar: [MODEL_CARD.md](MODEL_CARD.md) · uygulamada `/model` sayfası
 
-**Veri.** Q-CHAT, Polonya kohortu: 18–24 aylık 252 çocuk. Etiketler ADOS-2, ADI-R ve DSM-5 ile
-konmuş klinik tanılar. Yaygın kullanılan UCI otizm veri setleri ise bilinçli olarak dışarıda
+**Veri.** Q-CHAT, Polonya kohortu: 18–24 aylık 252 çocuk. Etiket, rutin sağlık hizmetlerinde konmuş
+otizm tanısı; anket puanından türetilmemiş (tanı yöntemi veri setinde belirtilmiyor). Uygulamadaki
+10 maddelik kısa form, modelin 25 maddeden seçtiği maddelerdir; yayımlanmış Q-CHAT-10 formu değildir. Yaygın kullanılan UCI otizm veri setleri ise bilinçli olarak dışarıda
 bırakıldı: bu setlerde etiket, soruların toplamından türetilmiş (`toplam > 6`). Bu yüzden her model
 %100'e yakın doğruluk gösterir, ama öğrendiği şey bir toplama işleminden ibarettir
 ([data/README.md](backend/data/README.md)). Yetişkin taraması bu nedenle AQ-10'un yayımlanmış

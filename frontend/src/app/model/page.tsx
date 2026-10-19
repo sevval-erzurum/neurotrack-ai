@@ -9,7 +9,7 @@ import { ModelCardView } from "./model-card-view";
 
 export const metadata: Metadata = {
   title: "Model kartı",
-  description: "Q-CHAT-10 tarama modelinin nested cross-validation sonuçları, kalibrasyonu ve sınırlılıkları.",
+  description: "Q-CHAT kısa form tarama modelinin nested cross-validation sonuçları, kalibrasyonu ve sınırlılıkları.",
 };
 
 // Derleme sırasında API'ye ulaşılamayabilir (ör. Docker build); sayfa istek anında üretilir.

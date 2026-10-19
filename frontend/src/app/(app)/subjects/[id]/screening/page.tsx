@@ -35,7 +35,7 @@ export default function ScreeningPage() {
           <EmptyState
             icon={<Info className="size-5" />}
             title="Bu yaş için uygun bir tarama yok"
-            description={`Q-CHAT-10 modeli ${lo}–${hi} aylık çocuklarla eğitildi; ${s.name} şu an ${formatAge(age)}. Bu yaş aralığı dışında sonuç güvenilir olmaz. Endişeleriniz varsa doğrudan bir uzmana başvurun.`}
+            description={`Q-CHAT modeli ${lo}–${hi} aylık çocuklarla eğitildi; ${s.name} şu an ${formatAge(age)}. Bu yaş aralığı dışında sonuç güvenilir olmaz. Endişeleriniz varsa doğrudan bir uzmana başvurun.`}
             action={back}
           />
         </Card>

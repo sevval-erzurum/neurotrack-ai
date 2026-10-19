@@ -23,9 +23,9 @@ def instruments() -> dict[str, Any]:
     op = meta["operating_point"]
     return {
         "qchat10": {
-            "name": "Q-CHAT-10 (küçük çocuk)",
+            "name": "Q-CHAT kısa form (küçük çocuk)",
             "description": "18–24 aylık çocuklar için ebeveyn tarafından doldurulan kısa form. "
-            "Sonuç, klinik tanılarla eğitilmiş bir makine öğrenmesi modelinden gelir.",
+            "Sonuç, gerçek tanılarla eğitilmiş bir makine öğrenmesi modelinden gelir.",
             "age_range_months": list(QCHAT_AGE_MONTHS),
             "items": meta["items"],
             "model": {
@@ -52,7 +52,7 @@ def _run_qchat(subject: Subject, answers: dict[int, int]) -> tuple[float, str, d
     if subject.kind != SubjectKind.CHILD or age is None or not lo <= age <= hi:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
-            f"Q-CHAT-10 yalnızca {lo}–{hi} aylık çocuklar için geçerlidir (model bu yaş aralığında eğitildi).",
+            f"Q-CHAT kısa formu yalnızca {lo}–{hi} aylık çocuklar için geçerlidir (model bu yaş aralığında eğitildi).",
         )
     result = toddler.screen(answers)
     details = {
