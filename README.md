@@ -1,5 +1,7 @@
 # NeuroTrack AI
 
+**Türkçe** · [English](README.en.md)
+
 Otizm spektrumu için **açıklanabilir erken tarama**, günlük takip ve bakım ekibi iletişimi sunan
 full-stack bir platform. Ebeveynler, otizmli yetişkinler ve hekimler aynı veriye bakarak birlikte
 karar verir.
@@ -26,6 +28,10 @@ karar verir.
 | ![Tarama sonucu](docs/screenshots/screening-result.png) | ![Doktor paneli](docs/screenshots/doctor-dashboard.png) |
 | **Model kartı** | **Koyu tema** |
 | ![Model kartı](docs/screenshots/model-card.png) | ![Koyu tema](docs/screenshots/adult-dark.png) |
+| **Yönetim paneli** | **Doktor onayları** |
+| ![Yönetim paneli](docs/screenshots/admin-dashboard.png) | ![Doktor onayları](docs/screenshots/admin-doctors.png) |
+| **Erişim günlüğü (yönetici)** | **Erişim geçmişi (veri sahibi)** |
+| ![Erişim günlüğü](docs/screenshots/admin-audit.png) | ![Erişim geçmişi](docs/screenshots/access-history.png) |
 
 ## Makine öğrenmesi: daha büyük değil, daha dürüst model
 
@@ -33,10 +39,10 @@ Ayrıntılar: [MODEL_CARD.md](MODEL_CARD.md) · uygulamada `/model` sayfası
 
 **Veri.** Q-CHAT, Polonya kohortu: 18–24 aylık 252 çocuk. Etiket, rutin sağlık hizmetlerinde konmuş
 otizm tanısı; anket puanından türetilmemiş (tanı yöntemi veri setinde belirtilmiyor). Uygulamadaki
-10 maddelik kısa form, modelin 25 maddeden seçtiği maddelerdir; yayımlanmış Q-CHAT-10 formu değildir. Yaygın kullanılan UCI otizm veri setleri ise bilinçli olarak dışarıda
-bırakıldı: bu setlerde etiket, soruların toplamından türetilmiş (`toplam > 6`). Bu yüzden her model
-%100'e yakın doğruluk gösterir, ama öğrendiği şey bir toplama işleminden ibarettir
-([data/README.md](backend/data/README.md)). Yetişkin taraması bu nedenle AQ-10'un yayımlanmış
+10 maddelik kısa form, modelin 25 maddeden seçtiği maddelerdir; yayımlanmış Q-CHAT-10 formu
+değildir. Yaygın kullanılan UCI otizm veri setleri ise bilinçli olarak dışarıda bırakıldı: bu
+setlerde etiket, soruların toplamından türetilmiş (`toplam > 6`). Bu yüzden her model %100'e yakın
+doğruluk gösterir, ama öğrendiği şey bir toplama işleminden ibarettir ([data/README.md](backend/data/README.md)). Yetişkin taraması bu nedenle AQ-10'un yayımlanmış
 puanlama kuralıyla yapılıyor.
 
 **Yöntem.** Nested cross-validation kullanıldı: dışta 5 kat × 5 tekrar, içte 5 kat. 25 maddeden
@@ -101,7 +107,7 @@ gösteriyordu (0.944).
 ```mermaid
 flowchart LR
     B[Tarayıcı] -->|/ ve /api/v1/*| N[Next.js 16<br/>App Router]
-    N -->|rewrite, aynı origin| F[FastAPI]
+    N -->|route handler proxy, aynı origin| F[FastAPI]
     F --> DB[(PostgreSQL / SQLite)]
     F --> M[scikit-learn modeli<br/>+ açıklama]
     F -.isteğe bağlı.-> G[Gemini API]
@@ -194,6 +200,13 @@ frontend/
 MODEL_CARD.md
 docker-compose.yml
 ```
+
+## Lisans
+
+Kod [MIT](LICENSE) lisanslıdır. `backend/data/` altındaki veri setleri kendi lisanslarıyla
+(CC BY 4.0) dağıtılır: Polonya Q-CHAT verisi Niedźwiecka, Pisula ve Domasiewicz'e (Mendeley Data,
+2020), UCI otizm tarama verileri Thabtah'a (2017) aittir. Ayrıntılar:
+[backend/data/README.md](backend/data/README.md).
 
 ## Yol haritası
 

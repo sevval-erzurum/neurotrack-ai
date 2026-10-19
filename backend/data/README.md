@@ -11,8 +11,11 @@
   "community-based diagnosis", yani rutin sağlık hizmetlerinde konmuş tanı. Tanının hangi
   araçla (ör. ADOS-2) ve kim tarafından konduğu veri setinde belirtilmiyor; veriler Varşova'daki
   erken müdahale merkezleri ve otizm derneklerinin yardımıyla toplanmış.
-- **Kaynak:** Mendeley Data, DOI [10.17632/tmpkt2mfkg.2](https://data.mendeley.com/datasets/tmpkt2mfkg/2)
-  (orijinal dosya SPSS `.sav`; burada CSV'ye çevrildi, `group` kolonu `asd` olarak 1/0 kodlandı).
+- **Kaynak:** Niedźwiecka, A., Pisula, E. & Domasiewicz, Z. (2020). *Q-CHAT scores of Polish
+  toddlers with autism spectrum disorders and typically developing controls* (Version 2).
+  Mendeley Data. DOI [10.17632/tmpkt2mfkg.2](https://data.mendeley.com/datasets/tmpkt2mfkg/2)
+- **Lisans:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Değişiklik: orijinal SPSS
+  `.sav` dosyası CSV'ye çevrildi, `group` kolonu `asd` olarak 1/0 kodlandı.
 - **İlgili çalışma:** Sollis, Wall & Washington (2025), *Compact subsets of autism screening items
   predict clinical diagnoses with a machine learning analysis of the QCHAT-10*, Scientific Reports.
   <https://www.nature.com/articles/s41598-025-26131-9>
@@ -36,6 +39,13 @@ Model eğitimi: `python -m app.ml.train_toddler`. Sonuçlar ve sınırlılıklar
 ## adult.csv / child.csv — DİKKAT: hedef sızıntısı var
 
 UCI "Autism Screening" veri setleri (Thabtah 2017). Sırasıyla 704 ve 292 satır.
+
+- **Kaynak:** Thabtah, F. (2017). *Autism Screening Adult* ve *Autistic Spectrum Disorder
+  Screening Data for Children*. UCI Machine Learning Repository.
+  <https://archive.ics.uci.edu/dataset/426/autism+screening+adult>,
+  <https://archive.ics.uci.edu/dataset/419/autistic+spectrum+disorder+screening+data+for+children>
+- **Lisans:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). `adult_clean.csv`,
+  `adult.csv`'nin temizlenmiş hâlidir.
 
 **Bu setlerde `Class/ASD` etiketi, A1–A10 maddelerinin toplamından deterministik olarak türetilmiştir:**
 
