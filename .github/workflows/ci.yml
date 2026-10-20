@@ -68,6 +68,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npx eslint src
+      # LayoutProps gibi rota tipleri Next tarafından üretilir; tsc'den önce oluşturulmalı.
+      - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm run build
 
